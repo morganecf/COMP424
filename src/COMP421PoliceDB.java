@@ -91,36 +91,31 @@ public class COMP421PoliceDB {
 	
 	//TODO: error handling 
 	public static int getUserChoice_int(String message)
-	{
-		Scanner scan = new Scanner(System.in);
-		System.out.print(message);
-		try
-		{
-			int toReturn = scan.nextInt();
-			scan.close();
-			return toReturn;
-		}
-		catch (InputMismatchException e)
-		{
-			scan.close();
-			return -1;
-		}
-	}
+    {
+            Scanner scan = new Scanner(System.in);
+            System.out.print(message);
+            try
+            {
+                    return scan.nextInt();
+            }
+            catch (InputMismatchException e)
+            {
+                    return -1;
+            }
+    }
+    
+    // TODO: error handling
+    public static String getUserChoice_str(String message) {
+            Scanner scan = new Scanner(System.in);
+            System.out.print(message);
+            try {
+                    return scan.next();
+            }
+            catch (InputMismatchException e) {
+                    return "";
+            }
+    }
 	
-	// TODO: error handling
-	public static String getUserChoice_str(String message) {
-		Scanner scan = new Scanner(System.in);
-		System.out.print(message);
-		try {
-			String toReturn = scan.next();
-			scan.close();
-			return toReturn;
-		}
-		catch (InputMismatchException e) {
-			scan.close();
-			return "";
-		}
-	}
 	
 	// Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
@@ -284,12 +279,19 @@ public class COMP421PoliceDB {
 			statement.executeBatch();
 		}
 		
+		String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
+		
+		if(answer.equals("y"))
+		{
+			optimize(statement);
+		}
 		
 	}
 	// Compile statistics
 	// Ex: boroughs with highest crime rate, intersections with high volume of traffic violations, most criminal gender, etc.
 	// Could have option to run all, or spec)ify which borough you want to see stats for (for example)
-	public static void runStats(Statement statement) throws SQLException {
+	public static void runStats(Statement statement) throws SQLException 
+	{
 		statement.clearBatch();
 		return;
 	}
@@ -300,34 +302,5 @@ public class COMP421PoliceDB {
 		statement.clearBatch();
 		return;
 	}
-	
-	/*public static void testRun()
-	{
-		ResultSet test = db.runQuery("SELECT * FROM Offender");
-		if (test != null)
-		{
-			boolean result = false;
-			try {Statement dbStatement = db.getStatement();
-				while (test.next())
-				{
-					result = true;
-					System.out.print("OID: " + test.getString("oid"));
-					System.out.print("Name: " + test.getString("fname") + " " + test.getString("lname"));
-					System.out.print("Gender: " + test.getString("gender"));
-					System.out.print("Race: " + test.getString("race"));
-					System.out.print("Address" + test.getString("address"));
-					System.out.println("Date of Birth" + test.getString("dob"));	
-				}
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.out.println("Main.optionOne(): SQL Exception caught while processing ResultSet.");
-			}
-			if (!result)
-			{
-				System.out.println("No results found.");
-			}
-		}
-	}*/
 
 }
