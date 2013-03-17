@@ -1,5 +1,7 @@
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.List;
 import java.util.Scanner;
 
 
@@ -25,12 +27,12 @@ public class COMP421PoliceDB {
 		while (run)
 		{
 			System.out.println("Please select one of the following options by typing the associated number:\n");
-			System.out.println("1. Test query");
-			System.out.println("2. Test query");
-			System.out.println("3. Test query");
-			System.out.println("4. Test query");
-			System.out.println("5. Test query");
-			System.out.println("6. Test query");
+			System.out.println("1. Lookup Criminal");
+			System.out.println("2. Add an Offense");
+			System.out.println("3. Increase Police Officer Salary");
+			System.out.println("4. Insert Census Information");
+			System.out.println("5. Compile Statistics");
+			System.out.println("6. Calculate Police Officer Allocation");
 			System.out.println("7. Quit\n");
 			int userin = getUserChoice();
 			
@@ -62,10 +64,6 @@ public class COMP421PoliceDB {
 			else if (userin == 7)
 			{
 				run = false;
-			}
-			else if (userin == 8) 
-			{
-				testRun();
 			}
 			else if (userin == -1)
 			{
@@ -136,11 +134,51 @@ public class COMP421PoliceDB {
 	public static void updatePopulation(Statement statement) throws SQLException 
 	{
 		statement.clearBatch();
+		int year;
+		
+		System.out.println("Please select a census year");
+		year = getUserChoice();
+		ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
+		censusYear.next();
+		
+		if(censusYear.getInt(1) == 19)
+		{
+			System.out.println("Census data from selected year is already in database");
+		}
+		else
+		{
+			List<String> listBoroughs = new ArrayList<String>();
+			ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
+			
+			while(boroughs.next())
+			{
+				listBoroughs.add(boroughs.getString("name"));
+			}
+			
+			for(String currentBorough : listBoroughs)
+			{
+				
+				if(statement.execute("SELECT * FROM population WHERE year = " + year
+						+ " AND borough_bid = " + "'" + currentBorough + "'"))
+				{
+					System.out.println("Enter census population for: " + currentBorough);
+					int population = getUserChoice();
+					String insert = "INSERT INTO population VALUES(" + year + ", " + population 
+							+ ", '" + currentBorough + "')";
+					
+					statement.addBatch(insert);
+				}
+				
+			}
+			
+			statement.executeBatch();
+		}
+		
+		
 	}
-	
 	// Compile statistics
 	// Ex: boroughs with highest crime rate, intersections with high volume of traffic violations, most criminal gender, etc.
-	// Could have option to run all, or specify which borough you want to see stats for (for example)
+	// Could have option to run all, or spec)ify which borough you want to see stats for (for example)
 	public static void runStats(Statement statement) throws SQLException {
 		statement.clearBatch();
 		return;
@@ -153,13 +191,13 @@ public class COMP421PoliceDB {
 		return;
 	}
 	
-	public static void testRun()
+	/*public static void testRun()
 	{
 		ResultSet test = db.runQuery("SELECT * FROM Offender");
 		if (test != null)
 		{
 			boolean result = false;
-			try {
+			try {Statement dbStatement = db.getStatement();
 				while (test.next())
 				{
 					result = true;
@@ -180,6 +218,6 @@ public class COMP421PoliceDB {
 				System.out.println("No results found.");
 			}
 		}
-	}
+	}*/
 
 }
