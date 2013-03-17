@@ -102,7 +102,7 @@ public class COMP421PoliceDB {
 		Scanner scan = new Scanner(System.in);
 		System.out.print(message);
 		try {
-			return scan.next();
+			return scan.nextLine();
 		}
 		catch (InputMismatchException e) {
 			return "";
@@ -213,10 +213,8 @@ public class COMP421PoliceDB {
 		
 		// Get the current year
 		int year = currentYear();
-		System.out.println("Current year:"+year);
 		// Get the year before
 		int previousyear = previousYear(year, statement);
-		System.out.println("Previous year:"+previousyear);
 		
 		// Calculate the if crime rate is going up or down in this borough
 		double current_crimerate = crimeRate(borough, year, statement);
@@ -227,11 +225,17 @@ public class COMP421PoliceDB {
 		
 		// If the crime rate has increased, increase the salaries of specified officers 
 		// Of the police stations of that borough
-//		if(previous_crimerate < current_crimerate) {
-		String query = "UPDATE police_officer SET salary = salary*"+perc+" WHERE rank="+rank+" AND police_station_psid IN (SELECT psid FROM police_station WHERE borough_bid="+borough;
-		statement.executeUpdate(query);
-//		}
-
+		if(current_crimerate > 0  && previous_crimerate > 0 && previous_crimerate < current_crimerate) {
+			String query = "UPDATE police_officer SET salary = salary*"+perc+" WHERE rank="+rank+" AND police_station_psid IN (SELECT psid FROM police_station WHERE borough_bid="+"'"+borough+"')";
+			try {
+				statement.executeUpdate(query);
+				System.out.println("Successfully updated salaries of all officers in "+borough+" with a rank of "+rank);
+			} catch (SQLException e) {
+				e.printStackTrace();
+				System.out.println("Unable to update salaries of the specified officers.");
+			}
+		}
+		
 		return;
 	}
 	
