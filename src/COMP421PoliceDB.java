@@ -1,6 +1,7 @@
 import java.sql.*;
 import java.util.InputMismatchException;
 import java.util.Scanner;
+import java.util.Calendar;
 
 
 public class COMP421PoliceDB {
@@ -37,7 +38,7 @@ public class COMP421PoliceDB {
 			System.out.println("6. Test query");
 			System.out.println("7. Quit\n");
 			
-			int userin = getUserChoice("Your choice:");
+			int userin = getUserChoice_int("Your choice:");
 
 			if (userin == 1)
 			{
@@ -91,7 +92,7 @@ public class COMP421PoliceDB {
 	}
 	
 	//TODO: error handling 
-	public static int getUserChoice(String message)
+	public static int getUserChoice_int(String message)
 	{
 		Scanner scan = new Scanner(System.in);
 		System.out.print(message);
@@ -137,14 +138,55 @@ public class COMP421PoliceDB {
 		return;
 	}
 	
+	// Personal crime rate = number of crimes / (population / 1000)
+	// BJS publications typically report crime rates as per 1000 persons
+	public double crimeRate(String borough, Statement stmt, int year) {
+		//Formulate queries - get population count of the borough from that year and number of crimes committed in the borough that year
+		String pop_query = "SELECT population_count FROM Population WHERE bourough_bid = "+borough+" AND year = "+year;
+		String numcrimes_query = "SELECT COUNT(*) FROM Offense O, Crime C where O.ofid = C.offense_ofid and C.borough_bid = "+borough+" AND year(O.date_committed) ="+year;
+		
+		double population = 0.0;
+		double crimecount = 0.0;
+		
+		//Attempt to execute queries and retrieve values
+		try {
+			ResultSet popcount = stmt.executeQuery(pop_query);
+			population = popcount.getDouble("population_count");
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			System.out.println("Failed to retrieve population: SQL error.");
+			return -1.0;
+		}
+		try {
+			ResultSet numcrimes = stmt.executeQuery(numcrimes_query);
+			crimecount = numcrimes.getDouble(1);
+		} catch (SQLException e) {
+			System.out.println("Failed to retrieve crime count: SQL Error");
+			return -1.0;
+		}
+		
+		//Calculate and return rate
+		return (crimecount/(population/1000.0));
+	}
 	
 	// Increase the salary of all police officers with ranking >= x
-	// Increase by a certain percentage based on the crime rate
+	// In a specific borough
+	// Increase by a certain percentage based on the crime rate of that borough
 	// Prompt user for ranking, percentage
 	// Have error handling or triggers if combined salary exceeds budget 
 	//TODO make general function for getting input with message
 	public static void increaseSalary(Statement statement) throws SQLException {
 		statement.clearBatch();
+		String borough = getUserChoice_str("Enter borough: ");
+		int rank = getUserChoice_int("Enter rank: ");
+		int perc = getUserChoice_int("Enter rank: ");
+		
+		//Get the current year
+		Calendar rightnow = Calendar.getInstance();
+		int year = rightnow.get(Calendar.YEAR);
+		
+		statement.executeUpdate(sql);
 		return;
 	}
 	
