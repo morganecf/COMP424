@@ -2,7 +2,8 @@ import java.sql.*;
 import java.util.InputMismatchException;
 import java.util.Scanner;
 import java.util.Calendar;
-
+import java.util.List;
+import java.util.ArrayList;
 
 public class COMP421PoliceDB {
 
@@ -138,17 +139,16 @@ public class COMP421PoliceDB {
 		return;
 	}
 	
-	// Personal crime rate = number of crimes / (population / 1000)
-	// BJS publications typically report crime rates as per 1000 persons
-	public double crimeRate(String borough, Statement stmt, int year) {
-		//Formulate queries - get population count of the borough from that year and number of crimes committed in the borough that year
+	// Personal crime rate = number of crimes / (population / 100000)
+	public static double crimeRate(String borough, int year, Statement stmt) {
+		// Formulate queries - get population count of the borough from that year and number of crimes committed in the borough that year
 		String pop_query = "SELECT population_count FROM Population WHERE bourough_bid = "+borough+" AND year = "+year;
 		String numcrimes_query = "SELECT COUNT(*) FROM Offense O, Crime C where O.ofid = C.offense_ofid and C.borough_bid = "+borough+" AND year(O.date_committed) ="+year;
 		
 		double population = 0.0;
 		double crimecount = 0.0;
 		
-		//Attempt to execute queries and retrieve values
+		// Attempt to execute queries and retrieve values
 		try {
 			ResultSet popcount = stmt.executeQuery(pop_query);
 			population = popcount.getDouble("population_count");
@@ -166,12 +166,53 @@ public class COMP421PoliceDB {
 			return -1.0;
 		}
 		
-		//Calculate and return rate
-		return (crimecount/(population/1000.0));
+		// Calculate and return rate
+		return (crimecount/(population/100000.0));
 	}
 	
-	// Increase the salary of all police officers with ranking >= x
-	// In a specific borough
+	// Calculate the slope of crime rates in a certain borough 
+	// Basically if crime is going up/down
+	public static double slope(String borough, Statement stmt) {
+		
+		int numyears = 0;
+		try {
+			ResultSet numyrs = stmt.executeQuery("SELECT COUNT(DISTINCT year) FROM population");
+			numyears = numyrs.getInt(1);
+		} catch (SQLException e) {
+			System.out.println("Failed to retrieve number of distinct years: SQL error");
+			return -1.0;
+		}
+		
+		int[] years = new int[numyears];
+		
+		try {
+			ResultSet yrs = stmt.executeQuery("SELECT DISTINCT year FROM population");
+			int ind = 0;
+			while (yrs.next()) {
+				years[ind] = yrs.getInt(1);
+				ind ++;
+			}
+		} catch (SQLException e) {
+			System.out.println("Failed to retrieve years: SQL Error");
+			return -1.0;
+		}
+		
+		// Will hold the rates for each year
+		double[] rates = new double[numyears];
+		
+		// Calculate the crime rate for each year for this borough
+		for(int i=0; i<years.length; i++) {
+			double CR = crimeRate(borough, years[i], stmt);
+			rates[i] = CR;
+			//TODO: get rid of all -1.0 values//error handling from crimeRate function
+		}
+		
+		// Calculate the derivative
+		
+		return 0.0;
+	}
+	
+	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
 	// Prompt user for ranking, percentage
 	// Have error handling or triggers if combined salary exceeds budget 
@@ -182,9 +223,13 @@ public class COMP421PoliceDB {
 		int rank = getUserChoice_int("Enter rank: ");
 		int perc = getUserChoice_int("Enter rank: ");
 		
-		//Get the current year
+		// Get the current year
 		Calendar rightnow = Calendar.getInstance();
 		int year = rightnow.get(Calendar.YEAR);
+		
+		// Calculate the if crime rate is going up or down in this borough
+		double crimerate = crimeRate(borough, year, statement);
+		
 		
 		statement.executeUpdate(sql);
 		return;
