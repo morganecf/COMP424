@@ -58,6 +58,11 @@ public class DBConnect {
 		return;
 	}
 	
+	public Statement getStatement()
+	{
+		return this.stmt;
+	}
+	
 	public ResultSet runQuery(String query)
 	{
 		ResultSet toReturn = null;
