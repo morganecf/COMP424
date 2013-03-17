@@ -11,14 +11,15 @@ public class COMP421PoliceDB {
 	
 	static DBConnect db;
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws SQLException {
 		// TODO Auto-generated method stub
 		System.out.println("WELCOME TO THE POLICE DATABASE QUERY SYSTEM.");
 		boolean run = true;
 		
 		//Create DBConnect object which establishes connection to database and handles all
 		//queries
-		db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
+		db = new DBConnect("jdbc:db2://db2:50000/cs421", "cs421g10", "LewVe-g5");
+		Statement dbStatement = db.getStatement();
 		
 		//loop for user to choose a choice
 		while (run)
@@ -32,29 +33,31 @@ public class COMP421PoliceDB {
 			System.out.println("6. Test query");
 			System.out.println("7. Quit\n");
 			int userin = getUserChoice();
+			
+			
 			if (userin == 1)
 			{
-				isCriminal();
+				isCriminal(dbStatement);
 			}
 			else if (userin == 2)
 			{
-				addOffense();
+				addOffense(dbStatement);
 			}
 			else if (userin == 3)
 			{
-				increaseSalary();
+				increaseSalary(dbStatement);
 			}
 			else if (userin == 4)
 			{
-				updatePopulation();
+				updatePopulation(dbStatement);
 			}
 			else if (userin == 5)
 			{
-				runStats();
+				runStats(dbStatement);
 			}
 			else if (userin == 6)
 			{
-				optimize();
+				optimize(dbStatement);
 			}
 			else if (userin == 7)
 			{
@@ -79,6 +82,7 @@ public class COMP421PoliceDB {
 			}
 		}
 		System.out.println("\nTHANK YOU FOR USING THE POLICE DATABASE QUERY SYSTEM.");
+		dbStatement.close();
 		db.closeConnection();
 	}
 	
@@ -98,7 +102,9 @@ public class COMP421PoliceDB {
 	
 	// Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
-	public static void isCriminal() {
+	public static void isCriminal(Statement statement) throws SQLException {
+		statement.clearBatch();
+		
 		return;
 	}
 	
@@ -109,7 +115,9 @@ public class COMP421PoliceDB {
 	// If crime and occurred 10 years ago, don't add but record in log file 
 	// Could these be triggers? 
 	// can use isCriminal() to check if already exists
-	public static void addOffense() {
+	public static void addOffense(Statement statement) throws SQLException {
+		statement.clearBatch();
+		
 		return;
 	}
 	
@@ -117,27 +125,31 @@ public class COMP421PoliceDB {
 	// Increase by a certain percentage based on the crime rate
 	// Prompt user for ranking vs. function, id (or name??), percentage
 	// Have error handling or triggers if combined salary exceeds budget 
-	public static void increaseSalary() {
+	public static void increaseSalary(Statement statement) throws SQLException {
+		statement.clearBatch();
 		return;
 	}
 	
 	// Update the population with new census information 
 	// Asks for the new population of each borough
 	// If the crime rate changes by a certain amount then ask user if want to reallocate, then run analyze() ??
-	public static void updatePopulation() {
-		return;
+	public static void updatePopulation(Statement statement) throws SQLException 
+	{
+		statement.clearBatch();
 	}
 	
 	// Compile statistics
 	// Ex: boroughs with highest crime rate, intersections with high volume of traffic violations, most criminal gender, etc.
 	// Could have option to run all, or specify which borough you want to see stats for (for example)
-	public static void runStats() {
+	public static void runStats(Statement statement) throws SQLException {
+		statement.clearBatch();
 		return;
 	}
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
 	// Should have modification option 
-	public static void optimize() {
+	public static void optimize(Statement statement) throws SQLException {
+		statement.clearBatch();
 		return;
 	}
 	
@@ -169,7 +181,5 @@ public class COMP421PoliceDB {
 			}
 		}
 	}
-	
-	public static void 
 
 }
