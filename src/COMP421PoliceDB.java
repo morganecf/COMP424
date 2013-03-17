@@ -19,7 +19,7 @@ public class COMP421PoliceDB {
 		//Create DBConnect object which establishes connection to database and handles all
 		//queries
 		db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
-		
+				
 		//loop for user to choose a choice
 		while (run)
 		{
@@ -31,7 +31,7 @@ public class COMP421PoliceDB {
 			System.out.println("5. Test query");
 			System.out.println("6. Test query");
 			System.out.println("7. Quit\n");
-			int userin = getUserChoice();
+			int userin = getUserChoice("Your choice:");
 			if (userin == 1)
 			{
 				isCriminal();
@@ -82,10 +82,11 @@ public class COMP421PoliceDB {
 		db.closeConnection();
 	}
 	
-	public static int getUserChoice()
+	//TODO: error handling 
+	public static int getUserChoice(String message)
 	{
 		Scanner scan = new Scanner(System.in);
-		System.out.print("Your choice: ");
+		System.out.print(message);
 		try
 		{
 			return scan.nextInt();
@@ -96,6 +97,18 @@ public class COMP421PoliceDB {
 		}
 	}
 	
+	// TODO: error handling
+	public static String getUserChoice_str(String message) {
+		Scanner scan = new Scanner(System.in);
+		System.out.print(message);
+		try {
+			return scan.next();
+		}
+		catch (InputMismatchException e) {
+			return "";
+		}
+	}
+	
 	// Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
 	public static void isCriminal() {
@@ -103,7 +116,7 @@ public class COMP421PoliceDB {
 	}
 	
 	// Add an offense to the database
-	// Prompts user if adding a traffic violation or crime
+	// Prompts user if adding a traffic violatiostmtn or crime
 	// Prompts user for all other info (criminal name/location of crime/etc...)
 	// If traffic violation and occurred 5 years ago, don't add 
 	// If crime and occurred 10 years ago, don't add but record in log file 
@@ -113,11 +126,28 @@ public class COMP421PoliceDB {
 		return;
 	}
 	
-	// Increase the salary of all police officers with ranking >= x or function = 's'
+	
+	// Increase the salary of all police officers with ranking >= x
 	// Increase by a certain percentage based on the crime rate
-	// Prompt user for ranking vs. function, id (or name??), percentage
+	// Prompt user for ranking, percentage
 	// Have error handling or triggers if combined salary exceeds budget 
+	//TODO make general function for getting input with message
 	public static void increaseSalary() {
+		Scanner scan = new Scanner(System.in);
+		System.out.println("Enter rank:");
+		try {
+			 int rank = scan.nextInt();
+		}
+		catch (InputMismatchException e) {
+			 int rank = -1;		//TODO try again
+		}
+		System.out.println("Enter percentage:");
+		try {
+			int perc = scan.nextInt();
+		}
+		catch (InputMismatchException e) {
+			int perc = -1; 		//TODO try again
+		}
 		return;
 	}
 	
@@ -169,7 +199,5 @@ public class COMP421PoliceDB {
 			}
 		}
 	}
-	
-	public static void 
 
 }
