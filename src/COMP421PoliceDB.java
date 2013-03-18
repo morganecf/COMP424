@@ -119,6 +119,9 @@ public class COMP421PoliceDB {
 	
 	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
+	
+	
+	
 	// Prompt user for ranking, percentage
 	public static int previousYear(int current_year, Statement stmt) {
 		ArrayList<Object> years = new ArrayList<Object>();
@@ -655,7 +658,7 @@ public class COMP421PoliceDB {
 			ResultSet popcount = stmt.executeQuery(pop_query);
 			if( popcount.next() ) {
 				population = popcount.getDouble("POPULATION_COUNT");
-				System.out.println("Population of "+borough+" in "+year+": "+population);
+				//System.out.println("Population of "+borough+" in "+year+": "+population);
 			}
 			else {
 				return -1.0;
@@ -670,7 +673,7 @@ public class COMP421PoliceDB {
 			ResultSet numcrimes = stmt.executeQuery(numcrimes_query);
 			if(numcrimes.next()) {
 				crimecount = numcrimes.getDouble(1);
-				System.out.println("Number of crimes in "+borough+" in "+year+": "+crimecount);
+				//System.out.println("Number of crimes in "+borough+" in "+year+": "+crimecount);
 			}
 			else {
 				return -1.0;
@@ -684,12 +687,85 @@ public class COMP421PoliceDB {
 		// Calculate and return rate
 		return (crimecount/(population/100000.0));
 	}
+	
+	public static int query_int(String query, Statement stmt, String info) {
+		try {
+			ResultSet RS = stmt.executeQuery(query);
+			if(RS.next()) {
+				return RS.getInt(1);
+			}
+			else {
+				System.out.println("No "+info+" information available.");
+				return -1;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Failed to retrieve "+info);
+			return -1;
+		}
+	}
+	
+	// TODO: error handling: throw exception if not enough info/0-values?  
+	// Checks to see if combined salary of the officers in a station + non-salary expenses exceeds the budget
+	// Given new knowledge (increase of salary based on rank and percent)
+	public static boolean checkBudget(int police_station, int rank, double percent, Statement stmt) {
+		String q1 = "SELECT SUM(salary+salary*percent) FROM police_officer WHERE rank="+rank+" AND police_station_psid = "+police_station;
+		String q2 = "SELECT COUNT(*) FROM police_officer WHERE police_station_psid = "+police_station;
+		String q3 = "SELECT budget FROM police_station WHERE psid= "+police_station;
+		String q4 = "SELECT non_salary_cost_per_officer FROM police_station WHERE psid = "+police_station;
+		
+		int total_salary = query_int(q1, stmt, "salary");
+		int num_officers = query_int(q2, stmt, "count of officers");
+		int budget = query_int(q3, stmt, "budget");
+		int cost_per_officer = query_int(q4, stmt, "non-salary cost per officer");
+		
+		if(total_salary <= 0 || num_officers <= 0 || budget <= 0 || cost_per_officer <= 0) {
+			System.out.println("Not enough information available to perform budget calculations.");
+			return false;	// Return false for now
+			//Throw exception? 
+		}
+		else {
+			return (total_salary+(num_officers*cost_per_officer)) >= budget;
+		}
+	}
+	
+	// Iterates through all police stations in a borough and returns those who are in the red
+	public static List<Integer> checkBudgets(String borough, int rank, double percent, Statement stmt) {
+		List<Object> police_stations = new ArrayList<Object>();
+		List<Integer> red_stations = new ArrayList<Integer>();
+		
+		// Get all the police stations in a borough
+		try {
+			ResultSet PS = stmt.executeQuery("SELECT psid FROM police_station WHERE borough_bid='"+borough+"'");
+			
+			while(PS.next())
+			{
+				police_stations.add(PS.getObject("PSID"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Failed to retrieve police stations:SQL error.");
+		}
+		
+		// Filter out the police stations whose costs exceeds their budgets and return these
+		for(Object station_obj : police_stations) {
+			int station = (int) (Integer) station_obj;
+			if(!checkBudget(station, rank, percent, stmt)) {
+				red_stations.add((Integer)station);
+			}
+		}
+		
+		return red_stations;
+		
+	}
 
+	//TODO: Test this!!
+	//TODO: make sure to check if ResultSet is empty or not!
+	//TODO: remove stack traces
 	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
 	// Prompt user for ranking, percentage
-	// Have error handling or triggers if combined salary exceeds budget 
-	//TODO make general function for getting input with message
+	// Have error handling if combined salary exceeds budget
 	public static void increaseSalary(Statement statement) throws SQLException {
 		statement.clearBatch();
 		String borough = getUserChoice_str("Enter borough: ");
@@ -711,75 +787,309 @@ public class COMP421PoliceDB {
 		// If the crime rate has increased, increase the salaries of specified officers 
 		// Of the police stations of that borough
 		if(current_crimerate > 0  && previous_crimerate > 0 && previous_crimerate < current_crimerate) {
-			String query = "UPDATE police_officer SET salary = salary*"+perc+" WHERE rank="+rank+" AND police_station_psid IN (SELECT psid FROM police_station WHERE borough_bid="+"'"+borough+"')";
-			try {
-				statement.executeUpdate(query);
-				System.out.println("Successfully updated salaries of all officers in "+borough+" with a rank of "+rank);
-			} catch (SQLException e) {
-				e.printStackTrace();
-				System.out.println("Unable to update salaries of the specified officers.");
+			
+			// First check to see if updating will put any police stations in financial duress, remove these
+			List<Integer> good_stations = checkBudgets(borough, rank, perc, statement);
+			System.out.println("There are "+good_stations.size()+" stations that can be updated.");
+			
+			// Now only update those stations 
+			for(Integer gs : good_stations) {
+				int psid = (int) gs;
+				String query = "UPDATE police_officer SET salary = salary + salary*"+perc+" WHERE rank="+rank+" AND police_station_psid = "+psid;
+				
+				try {
+					statement.executeUpdate(query);
+					System.out.println("Successfully updated salaries of all officers in police station "+psid);
+					
+				} catch (SQLException e) {
+					e.printStackTrace();
+					System.out.println("Unable to update salaries of the specified officers.");
+				}
 			}
+		}
+		
+		else {
+			System.out.println("Salaries should not be increased.");
 		}
 		
 		return;
 	}
 	
 	// Update the population with new census information 
-	// Asks for the new population of each borough
-	// If the crime rate changes by a certain amount then ask user if want to reallocate, then run analyze() ??
-	public static void updatePopulation(Statement statement) throws SQLException 
-	{
-		statement.clearBatch();
-		int year;
-		
-		System.out.println("Please select a census year");
-		year = getUserChoice_int("Year: ");
-		ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
-		censusYear.next();
-		
-		if(censusYear.getInt(1) == 19)
+		// Asks for the new population of each borough
+		// If the crime rate changes by a certain amount then ask user if want to reallocate, then run analyze() ??
+		public static void updatePopulation(Statement statement) throws SQLException 
 		{
-			System.out.println("Census data from selected year is already in database");
-		}
-		else
-		{
-			List<String> listBoroughs = new ArrayList<String>();
-			ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
+			statement.clearBatch();
+			int year;
 			
-			while(boroughs.next())
+			System.out.println("Please select a census year");
+			year = getUserChoice_int("Year: ");
+			ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
+			censusYear.next();
+			
+			if(censusYear.getInt(1) == 19)
 			{
-				listBoroughs.add(boroughs.getString("name"));
+				System.out.println("Census data from selected year is already in database");
 			}
-			
-			for(String currentBorough : listBoroughs)
+			else
 			{
+				List<String> listBoroughs = new ArrayList<String>();
+				ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
 				
-				if(statement.execute("SELECT * FROM population WHERE year = " + year
-						+ " AND borough_bid = " + "'" + currentBorough + "'"))
+				while(boroughs.next())
 				{
-					System.out.println("Enter census population for: " + currentBorough);
-					int population = getUserChoice_int("Population: ");
-					String insert = "INSERT INTO population VALUES(" + year + ", " + population 
-							+ ", '" + currentBorough + "')";
-					
-					statement.addBatch(insert);
+					listBoroughs.add(boroughs.getString("name"));
 				}
 				
+				for(String currentBorough : listBoroughs)
+				{
+					
+					if(statement.execute("SELECT * FROM population WHERE year = " + year
+							+ " AND borough_bid = " + "'" + currentBorough + "'"))
+					{
+						System.out.println("Enter census population for: " + currentBorough);
+						int population = getUserChoice_int("Population: ");
+						String insert = "INSERT INTO population VALUES(" + year + ", " + population 
+								+ ", '" + currentBorough + "')";
+						
+						statement.addBatch(insert);
+					}
+					
+				}
+				
+				statement.executeBatch();
+				
+				String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
+				
+				if(answer.equals("y"))
+				{
+					optimize(statement);
+				}
 			}
 			
-			statement.executeBatch();
+			
+		}
+	
+		// Increase the salary of all police officers with ranking >= x, in a specific borough
+		// Increase by a certain percentage based on the crime rate of that borough
+		// Compile statistics
+		// Ex: boroughs with highest crime rate, intersections with high volume of traffic violations, most criminal gender, etc.
+		// Could have option to run all, or spec)ify which borough you want to see stats for (for example)
+		public static void runStats(Statement statement) throws SQLException 
+		{
+			statement.clearBatch();
+			int selection;
+			
+			System.out.println("Please select one of the following options by typing the associated number:\n");
+			System.out.println("1. Conduct All Statiscal Analyses");
+			System.out.println("2. Borough crime rates");
+			System.out.println("3. Show unsolved crimes");
+			System.out.println("4. Traffic Violations per Intersection");
+			System.out.println("5. Police Station Budget Analysis");
+			System.out.println("6. Offenses per Age Group");
+			System.out.println("7. Offenses per Race");
+			System.out.println("8. Offenses per Gender");
+			
+			selection = getUserChoice_int("Your Selection: ");
+			
+			if(selection == 1)
+			{
+				allStatistics(statement);
+			}
+			else if(selection == 2)
+			{
+				showCrimeRates(statement);
+			}
+			else if(selection == 3)
+			{
+				showUnsolvedCrimes(statement);
+			}
+			else if(selection == 4)
+			{
+				showTrafficViolations(statement);
+			}
+			
+			return;
+		}
+		
+		public static void allStatistics(Statement statement)
+		{
+			try {
+				statement.clearBatch();
+				
+				showCrimeRates(statement);
+				showUnsolvedCrimes(statement);
+				showTrafficViolations(statement);
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 		}
 		
 		
-	}
-	
-	// Compile statistics
-	// Ex: boroughs with highest crime rate, intersections with high volume of traffic violations, most criminal gender, etc.
-	// Could have option to run all, or spec)ify which borough you want to see stats for (for example)
-	public static void runStats(Statement statement) throws SQLException {
-		statement.clearBatch();
-		return;
-	}
+		//TODO add offender information as well
+		public static void showTrafficViolations(Statement statement)
+		{
+			try {
+				statement.clearBatch();
+				
+				ResultSet intersections = statement.executeQuery("SELECT * FROM Intersection");
+				ArrayList<Intersection> intersectionList = new ArrayList<Intersection>();
+				
+				while(intersections.next())
+				{
+					int currentID = intersections.getInt("iid");
+					String currentFirstStreet = intersections.getString("first_street_name");
+					String currentSecondStreet = intersections.getString("second_street_name");
+					String currentBorough = intersections.getString("borough_bid");
+					
+					Intersection current = new Intersection(currentID, currentFirstStreet, currentSecondStreet, currentBorough);
+					intersectionList.add(current);
+				}
+				
+				for(Intersection current : intersectionList)
+				{
+					System.out.println("Intersection: " + current.getFirstStreet() + " and " 
+										+ current.getSecondStreet() + " in " + current.getBorough() + "\n");
+					
+					
+					int intersectionID = current.getId();
+					
+					ResultSet numOffenses = statement.executeQuery("SELECT COUNT(*) FROM traffic_violation WHERE " +
+							" intersection_iid = " + intersectionID);
+					
+					numOffenses.next();
+					int numberOffenses = numOffenses.getInt(1);
+					
+					if(numberOffenses > 0)
+					{
+						System.out.println("Offenses at Intersection: \n");
+						
+						int[] offenseArray = new int[numberOffenses];
+						int count = 0;
+						
+						ResultSet offenseIDS = statement.executeQuery("SELECT offense_oid FROM traffic_violation WHERE " +
+																		" intersection_iid = " + intersectionID);
+						
+						while(offenseIDS.next())
+						{
+							offenseArray[count] = offenseIDS.getInt("offense_oid");
+							count++;
+						}
+						
+						
+						for(int i = 0; i < numberOffenses; i++)
+						{
+							ResultSet currentOffense = statement.executeQuery("SELECT * FROM Offense WHERE ofid = " + offenseArray[i]);
+							currentOffense.next();
+							
+							
+							System.out.println("Date Committed: " + currentOffense.getDate("date_committed"));
+							System.out.println("Description: " + currentOffense.getString("description") + "\n");
+							
+						}
+						
+					}
+					else
+					{
+						System.out.println("No Traffic Violations at this Intersection \n");
+					}
+		
+					System.out.println("***********************************************");
+						
+					
+				}
+				
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+			
+		}
+		
+		public static void showUnsolvedCrimes(Statement statement)
+		{
+			try {
+				
+				statement.clearBatch();
+				String query = "SELECT * FROM Offense WHERE ofid NOT IN (SELECT offense_ofid FROM Offender_Commits_Offense)";
+				
+				ResultSet offenseWithoutOffender = statement.executeQuery(query);
+				
+				System.out.println("Showing Unsolved Crimes: \n");
+				
+				while(offenseWithoutOffender.next())
+				{
+					Date dateCommitted = offenseWithoutOffender.getDate("date_committed");
+					String description = offenseWithoutOffender.getString("description");
+					String address = offenseWithoutOffender.getString("address");
+					
+					System.out.println("Date Committed: " + dateCommitted);
+					System.out.println("Description: " + description);
+					System.out.println("Address: " + address + "\n");
+					
+				}
+				
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
+		public static void showCrimeRates(Statement statement)
+		{
+			int year = getUserChoice_int("Enter year for crime rate analysis");
+			
+			try 
+			{
+				statement.clearBatch();
+				
+				ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
+				censusYear.next();
+				
+				if(censusYear.getInt(1) == 0)
+				{
+					System.out.println("Not a valid year. Goodybe: ");
+					return;
+				}
+				
+				List<String> listBoroughs = new ArrayList<String>();
+				ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
+				
+				while(boroughs.next())
+				{
+					listBoroughs.add(boroughs.getString("name"));
+				}
+				
+				System.out.println("Showing crime rate for each borough in " + year);
+				
+				for(String borough : listBoroughs)
+				{
+					System.out.println(borough + ":     " + crimeRate(borough, year, statement) + " crimes/100000 people\n");
+					
+				}
+				
+				
+				
+					
+			} catch (SQLException e) {
+				System.out.println("Query could not be executed, please make another selection");
+				return;
+			}
+			
+			
+			
+		}
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
 	// Should have modification option 
@@ -818,3 +1128,4 @@ public class COMP421PoliceDB {
 	}*/
 
 }
+
