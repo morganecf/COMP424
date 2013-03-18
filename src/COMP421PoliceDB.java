@@ -530,6 +530,10 @@ public class COMP421PoliceDB {
 			{
 				showUnsolvedCrimes(statement);
 			}
+			else if(selection == 4)
+			{
+				showTrafficViolations(statement);
+			}
 			
 			return;
 		}
@@ -541,12 +545,97 @@ public class COMP421PoliceDB {
 				
 				showCrimeRates(statement);
 				showUnsolvedCrimes(statement);
+				showTrafficViolations(statement);
 				
 				
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
+			
+		}
+		
+		
+		//TODO add offender information as well
+		public static void showTrafficViolations(Statement statement)
+		{
+			try {
+				statement.clearBatch();
+				
+				ResultSet intersections = statement.executeQuery("SELECT * FROM Intersection");
+				ArrayList<Intersection> intersectionList = new ArrayList<Intersection>();
+				
+				while(intersections.next())
+				{
+					int currentID = intersections.getInt("iid");
+					String currentFirstStreet = intersections.getString("first_street_name");
+					String currentSecondStreet = intersections.getString("second_street_name");
+					String currentBorough = intersections.getString("borough_bid");
+					
+					Intersection current = new Intersection(currentID, currentFirstStreet, currentSecondStreet, currentBorough);
+					intersectionList.add(current);
+				}
+				
+				for(Intersection current : intersectionList)
+				{
+					System.out.println("Intersection: " + current.getFirstStreet() + " and " 
+										+ current.getSecondStreet() + " in " + current.getBorough() + "\n");
+					
+					
+					int intersectionID = current.getId();
+					
+					ResultSet numOffenses = statement.executeQuery("SELECT COUNT(*) FROM traffic_violation WHERE " +
+							" intersection_iid = " + intersectionID);
+					
+					numOffenses.next();
+					int numberOffenses = numOffenses.getInt(1);
+					
+					if(numberOffenses > 0)
+					{
+						System.out.println("Offenses at Intersection: \n");
+						
+						int[] offenseArray = new int[numberOffenses];
+						int count = 0;
+						
+						ResultSet offenseIDS = statement.executeQuery("SELECT offense_oid FROM traffic_violation WHERE " +
+																		" intersection_iid = " + intersectionID);
+						
+						while(offenseIDS.next())
+						{
+							offenseArray[count] = offenseIDS.getInt("offense_oid");
+							count++;
+						}
+						
+						
+						for(int i = 0; i < numberOffenses; i++)
+						{
+							ResultSet currentOffense = statement.executeQuery("SELECT * FROM Offense WHERE ofid = " + offenseArray[i]);
+							currentOffense.next();
+							
+							
+							System.out.println("Date Committed: " + currentOffense.getDate("date_committed"));
+							System.out.println("Description: " + currentOffense.getString("description") + "\n");
+							
+						}
+						
+					}
+					else
+					{
+						System.out.println("No Traffic Violations at this Intersection \n");
+					}
+		
+					System.out.println("***********************************************");
+						
+					
+				}
+				
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
 			
 		}
 		
