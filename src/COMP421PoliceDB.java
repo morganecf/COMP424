@@ -113,7 +113,13 @@ public class COMP421PoliceDB {
 		Calendar rightnow = Calendar.getInstance();
 		return rightnow.get(Calendar.YEAR);
 	}
+	
+	
 
+	
+	// Increase the salary of all police officers with ranking >= x, in a specific borough
+	// Increase by a certain percentage based on the crime rate of that borough
+	// Prompt user for ranking, percentage
 	public static int previousYear(int current_year, Statement stmt) {
 		ArrayList<Object> years = new ArrayList<Object>();
 		try {
@@ -136,25 +142,136 @@ public class COMP421PoliceDB {
 		}
 	}
 	
-	// Look up whether a given person is a criminal
+//Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
-	public static void isCriminal(Statement statement) throws SQLException {
-		statement.clearBatch();
-		
+	public static void isCriminal(Statement statement)
+	{
+		try
+		{
+			statement.clearBatch();
+			System.out.println("Please enter the first and last name of the individual in question.\n");
+			String fname = getUserChoice_str("First name: ");
+			String lname = getUserChoice_str("Last name: ");
+			String checkExists = "SELECT * FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
+			ResultSet info = statement.executeQuery(checkExists);
+			int oid = -1;
+			ArrayList<Integer> candidates = new ArrayList<Integer>();
+			int count = 1;
+			System.out.println("\n**********************************************\n");
+			while (info.next())
+			{
+				candidates.add(new Integer(info.getString("oid")));
+				System.out.println("POSSIBLE MATCH #" + count);
+				System.out.println("\nFIRST NAME: " + info.getString("fname"));
+				System.out.println("LAST NAME: " + info.getString("lname"));
+				System.out.println("GENDER: " + info.getString("gender"));
+				System.out.println("RACE: " + info.getString("race"));
+				System.out.println("ADDRESS: " + info.getString("address"));
+				System.out.println("DATE OF BIRTH: " + info.getString("dob") + "\n");
+				count++;
+			}
+			if (candidates.size() > 1)
+			{
+				int choice = getUserChoice_int("\nPlease type the number corresponding to the Offender of interest: ");
+				if (choice > 0 && choice < candidates.size() + 1)
+				{
+					oid = candidates.get(choice - 1);
+				}
+				else 
+				{
+					System.out.println("\nThat is not a valid selection. Please try your search again.\n");
+					return;
+				}
+			}
+			else if (candidates.size() == 1)
+			{
+				oid = candidates.get(0).intValue();
+			}
+			
+			if (candidates.isEmpty())
+			{
+				System.out.println("\nNO MATCHES FOUND!\n");
+				return;
+			}
+			else 
+			{	
+				System.out.println("*******************************************************************");
+				System.out.println("\n" + fname + " " + lname + "'s CRIMINAL RECORD: ");
+				String query = "SELECT * FROM Offense AS o, (SELECT oco.offense_ofid FROM offender_commits_offense AS oco, (SELECT oid FROM Offender WHERE oid = " + oid + ") AS o2 WHERE o2.oid = oco.offender_oid) AS o3 WHERE o3.offense_ofid = o.ofid";
+				ResultSet record = statement.executeQuery(query);
+				boolean empty = true;
+				while (record.next())
+				{
+					empty = false;
+					System.out.println("\nDATE OF OFFENSE: " + record.getString("date_committed"));
+					System.out.println("DESCRIPTION: " + record.getString("description"));
+					System.out.println("LOCATION: " + record.getString("address"));
+					System.out.println("\n________________________\n");
+					
+				}
+				if (empty)
+				{
+					System.out.println("\n" + fname + " " + lname + " DOES NOT HAVE ANY OFFENSES ON RECORD.\n");
+				}
+				System.out.println("END OF RECORD");
+				System.out.println("*******************************************************************");
+
+			}
+		}
+		catch (SQLException e)
+		{
+			System.out.println("SQL ERROR OCCURRED");
+			e.printStackTrace();
+			return;
+		}
+
 		return;
 	}
 	
 	// Add an offense to the database
-	// Prompts user if adding a traffic violatiostmtn or crime
-	// Prompts user for all other info (criminal name/location of crime/etc...)
-	// If traffic violation and occurred 5 years ago, don't add 
-	// If crime and occurred 10 years ago, don't add but record in log file 
-	// Could these be triggers? 
-	// can use isCriminal() to check if already exists
-	public static void addOffense(Statement statement) throws SQLException {
-		statement.clearBatch();
-		return;
-	}
+		// Prompts user if adding a traffic violatiostmtn or crime
+		// Prompts user for all other info (criminal name/location of crime/etc...)
+		// If traffic violation and occurred 5 years ago, don't add 
+		// If crime and occurred 10 years ago, don't add but record in log file 
+		// Could these be triggers? 
+		// can use isCriminal() to check if already exists
+		public static void addOffense(Statement statement)
+		{
+			try
+			{
+				statement.clearBatch();
+				System.out.println("Please enter the first and last name of the offender.\n");
+				String fname = getUserChoice_str("First name: ");
+				String lname = getUserChoice_str("Last name: ");
+				
+				/*ArrayList<>
+				String checkExists = "SELECT oid FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
+				ResultSet info = statement.executeQuery(checkExists);
+				boolean empty = true;
+				while (info.next())
+				{
+					empty = false;
+					System.out.println("\nFIRST NAME: " + info.getString("fname"));
+					System.out.println("LAST NAME: " + info.getString("lname"));
+					System.out.println("GENDER: " + info.getString("gender"));
+					System.out.println("RACE: " + info.getString("race"));
+					System.out.println("ADDRESS: " + info.getString("address"));
+					System.out.println("DATE OF BIRTH: " + info.getString("dob") + "\n");
+				}
+				if (empty)
+				{
+					System.out.println("\nNO MATCHES FOUND!\n");
+				}*/
+			}
+			catch (SQLException e)
+			{
+				System.out.println("SQL ERROR OCCURRED");
+				e.printStackTrace();
+				return;
+			}		
+			
+			return;
+		}
 	
 	// Personal crime rate = number of crimes / (population / 100000)
 	public static double crimeRate(String borough, int year, Statement stmt) {
