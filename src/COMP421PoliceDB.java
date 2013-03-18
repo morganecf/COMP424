@@ -199,12 +199,85 @@ public class COMP421PoliceDB {
 		// Calculate and return rate
 		return (crimecount/(population/100000.0));
 	}
+	
+	public static int query_int(String query, Statement stmt, String info) {
+		try {
+			ResultSet RS = stmt.executeQuery(query);
+			if(RS.next()) {
+				return RS.getInt(1);
+			}
+			else {
+				System.out.println("No "+info+" information available.");
+				return -1;
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Failed to retrieve "+info);
+			return -1;
+		}
+	}
+	
+	// TODO: error handling: throw exception if not enough info/0-values?  
+	// Checks to see if combined salary of the officers in a station + non-salary expenses exceeds the budget
+	// Given new knowledge (increase of salary based on rank and percent)
+	public static boolean checkBudget(int police_station, int rank, double percent, Statement stmt) {
+		String q1 = "SELECT SUM(salary+salary*percent) FROM police_officer WHERE rank="+rank+" AND police_station_psid = "+police_station;
+		String q2 = "SELECT COUNT(*) FROM police_officer WHERE police_station_psid = "+police_station;
+		String q3 = "SELECT budget FROM police_station WHERE psid= "+police_station;
+		String q4 = "SELECT non_salary_cost_per_officer FROM police_station WHERE psid = "+police_station;
+		
+		int total_salary = query_int(q1, stmt, "salary");
+		int num_officers = query_int(q2, stmt, "count of officers");
+		int budget = query_int(q3, stmt, "budget");
+		int cost_per_officer = query_int(q4, stmt, "non-salary cost per officer");
+		
+		if(total_salary <= 0 || num_officers <= 0 || budget <= 0 || cost_per_officer <= 0) {
+			System.out.println("Not enough information available to perform budget calculations.");
+			return false;	// Return false for now
+			//Throw exception? 
+		}
+		else {
+			return (total_salary+(num_officers*cost_per_officer)) >= budget;
+		}
+	}
+	
+	// Iterates through all police stations in a borough and returns those who are in the red
+	public static List<Integer> checkBudgets(String borough, int rank, double percent, Statement stmt) {
+		List<Object> police_stations = new ArrayList<Object>();
+		List<Integer> red_stations = new ArrayList<Integer>();
+		
+		// Get all the police stations in a borough
+		try {
+			ResultSet PS = stmt.executeQuery("SELECT psid FROM police_station WHERE borough_bid='"+borough+"'");
+			
+			while(PS.next())
+			{
+				police_stations.add(PS.getObject("PSID"));
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+			System.out.println("Failed to retrieve police stations:SQL error.");
+		}
+		
+		// Filter out the police stations whose costs exceeds their budgets and return these
+		for(Object station_obj : police_stations) {
+			int station = (int) (Integer) station_obj;
+			if(!checkBudget(station, rank, percent, stmt)) {
+				red_stations.add((Integer)station);
+			}
+		}
+		
+		return red_stations;
+		
+	}
 
+	//TODO: Test this!!
+	//TODO: make sure to check if ResultSet is empty or not!
+	//TODO: remove stack traces
 	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
 	// Prompt user for ranking, percentage
-	// Have error handling or triggers if combined salary exceeds budget 
-	//TODO make general function for getting input with message
+	// Have error handling if combined salary exceeds budget
 	public static void increaseSalary(Statement statement) throws SQLException {
 		statement.clearBatch();
 		String borough = getUserChoice_str("Enter borough: ");
@@ -226,14 +299,29 @@ public class COMP421PoliceDB {
 		// If the crime rate has increased, increase the salaries of specified officers 
 		// Of the police stations of that borough
 		if(current_crimerate > 0  && previous_crimerate > 0 && previous_crimerate < current_crimerate) {
-			String query = "UPDATE police_officer SET salary = salary*"+perc+" WHERE rank="+rank+" AND police_station_psid IN (SELECT psid FROM police_station WHERE borough_bid="+"'"+borough+"')";
-			try {
-				statement.executeUpdate(query);
-				System.out.println("Successfully updated salaries of all officers in "+borough+" with a rank of "+rank);
-			} catch (SQLException e) {
-				e.printStackTrace();
-				System.out.println("Unable to update salaries of the specified officers.");
+			
+			// First check to see if updating will put any police stations in financial duress, remove these
+			List<Integer> good_stations = checkBudgets(borough, rank, perc, statement);
+			System.out.println("There are "+good_stations.size()+" stations that can be updated.");
+			
+			// Now only update those stations 
+			for(Integer gs : good_stations) {
+				int psid = (int) gs;
+				String query = "UPDATE police_officer SET salary = salary + salary*"+perc+" WHERE rank="+rank+" AND police_station_psid = "+psid;
+				
+				try {
+					statement.executeUpdate(query);
+					System.out.println("Successfully updated salaries of all officers in police station "+psid);
+					
+				} catch (SQLException e) {
+					e.printStackTrace();
+					System.out.println("Unable to update salaries of the specified officers.");
+				}
 			}
+		}
+		
+		else {
+			System.out.println("Salaries should not be increased.");
 		}
 		
 		return;
