@@ -119,9 +119,87 @@ public class COMP421PoliceDB {
 	
 	// Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
-	public static void isCriminal(Statement statement) throws SQLException {
-		statement.clearBatch();
-		
+	public static void isCriminal(Statement statement)
+	{
+		try
+		{
+			statement.clearBatch();
+			System.out.println("Please enter the first and last name of the individual in question.\n");
+			String fname = getUserChoice_str("First name: ");
+			String lname = getUserChoice_str("Last name: ");
+			String checkExists = "SELECT * FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
+			ResultSet info = statement.executeQuery(checkExists);
+			int oid = -1;
+			ArrayList<Integer> candidates = new ArrayList<Integer>();
+			int count = 1;
+			System.out.println("\n**********************************************\n");
+			while (info.next())
+			{
+				candidates.add(new Integer(info.getString("oid")));
+				System.out.println("POSSIBLE MATCH #" + count);
+				System.out.println("\nFIRST NAME: " + info.getString("fname"));
+				System.out.println("LAST NAME: " + info.getString("lname"));
+				System.out.println("GENDER: " + info.getString("gender"));
+				System.out.println("RACE: " + info.getString("race"));
+				System.out.println("ADDRESS: " + info.getString("address"));
+				System.out.println("DATE OF BIRTH: " + info.getString("dob") + "\n");
+				count++;
+			}
+			if (candidates.size() > 1)
+			{
+				int choice = getUserChoice_int("\nPlease type the number corresponding to the Offender of interest: ");
+				if (choice > 0 && choice < candidates.size() + 1)
+				{
+					oid = candidates.get(choice - 1);
+				}
+				else 
+				{
+					System.out.println("\nThat is not a valid selection. Please try your search again.\n");
+					return;
+				}
+			}
+			else if (candidates.size() == 1)
+			{
+				oid = candidates.get(0).intValue();
+			}
+			
+			if (candidates.isEmpty())
+			{
+				System.out.println("\nNO MATCHES FOUND!\n");
+				return;
+			}
+			else 
+			{	
+				System.out.println("*******************************************************************");
+				System.out.println("\n" + fname + " " + lname + "'s CRIMINAL RECORD: ");
+				String query = "SELECT * FROM Offense AS o, (SELECT oco.offense_ofid FROM offender_commits_offense AS oco, (SELECT oid FROM Offender WHERE oid = " + oid + ") AS o2 WHERE o2.oid = oco.offender_oid) AS o3 WHERE o3.offense_ofid = o.ofid";
+				ResultSet record = statement.executeQuery(query);
+				boolean empty = true;
+				while (record.next())
+				{
+					empty = false;
+					System.out.println("\nDATE OF OFFENSE: " + record.getString("date_committed"));
+					System.out.println("DESCRIPTION: " + record.getString("description"));
+					System.out.println("LOCATION: " + record.getString("address"));
+					System.out.println("\n________________________\n");
+					
+				}
+				if (empty)
+				{
+					System.out.println("\n" + fname + " " + lname + " DOES NOT HAVE ANY OFFENSES ON RECORD.\n");
+				}
+				System.out.println("END OF RECORD");
+				System.out.println("*******************************************************************");
+
+			}
+		}
+		catch (SQLException e)
+		{
+			System.out.println("SQL ERROR OCCURRED");
+			e.printStackTrace();
+			return;
+		}
+
 		return;
 	}
 	
@@ -132,16 +210,51 @@ public class COMP421PoliceDB {
 	// If crime and occurred 10 years ago, don't add but record in log file 
 	// Could these be triggers? 
 	// can use isCriminal() to check if already exists
-	public static void addOffense(Statement statement) throws SQLException {
-		statement.clearBatch();
+	public static void addOffense(Statement statement)
+	{
+		try
+		{
+			statement.clearBatch();
+			System.out.println("Please enter the first and last name of the offender.\n");
+			String fname = getUserChoice_str("First name: ");
+			String lname = getUserChoice_str("Last name: ");
+			
+			/*ArrayList<>
+			String checkExists = "SELECT oid FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
+			ResultSet info = statement.executeQuery(checkExists);
+			boolean empty = true;
+			while (info.next())
+			{
+				empty = false;
+				System.out.println("\nFIRST NAME: " + info.getString("fname"));
+				System.out.println("LAST NAME: " + info.getString("lname"));
+				System.out.println("GENDER: " + info.getString("gender"));
+				System.out.println("RACE: " + info.getString("race"));
+				System.out.println("ADDRESS: " + info.getString("address"));
+				System.out.println("DATE OF BIRTH: " + info.getString("dob") + "\n");
+			}
+			if (empty)
+			{
+				System.out.println("\nNO MATCHES FOUND!\n");
+			}*/
+		}
+		catch (SQLException e)
+		{
+			System.out.println("SQL ERROR OCCURRED");
+			e.printStackTrace();
+			return;
+		}		
+		
 		return;
 	}
 	
 	// Personal crime rate = number of crimes / (population / 100000)
-	public static double crimeRate(String borough, int year, Statement stmt) {
+	public static double crimeRate(String borough, int year, Statement stmt) throws SQLException {
+		stmt.clearBatch();
+
 		// Formulate queries - get population count of the borough from that year and number of crimes committed in the borough that year
 		String pop_query = "SELECT population_count FROM Population WHERE bourough_bid = "+borough+" AND year = "+year;
-		String numcrimes_query = "SELECT COUNT(*) FROM Offense O, Crime C where O.ofid = C.offense_ofid and C.borough_bid = "+borough+" AND year(O.date_committed) ="+year;
+		String numcrimes_query = "SELECT COUNT(*) FROM Offense O, Crime C where O.ofid = C.offense_ofid and C.borough_bid = '"+borough+"' AND year(O.date_committed) ="+year;
 		
 		double population = 0.0;
 		double crimecount = 0.0;
@@ -168,47 +281,7 @@ public class COMP421PoliceDB {
 		return (crimecount/(population/100000.0));
 	}
 	
-	// Calculate the slope of crime rates in a certain borough 
-	// Basically if crime is going up/down
-	public static double slope(String borough, Statement stmt) {
-		
-		int numyears = 0;
-		try {
-			ResultSet numyrs = stmt.executeQuery("SELECT COUNT(DISTINCT year) FROM population");
-			numyears = numyrs.getInt(1);
-		} catch (SQLException e) {
-			System.out.println("Failed to retrieve number of distinct years: SQL error");
-			return -1.0;
-		}
-		
-		int[] years = new int[numyears];
-		
-		try {
-			ResultSet yrs = stmt.executeQuery("SELECT DISTINCT year FROM population");
-			int ind = 0;
-			while (yrs.next()) {
-				years[ind] = yrs.getInt(1);
-				ind ++;
-			}
-		} catch (SQLException e) {
-			System.out.println("Failed to retrieve years: SQL Error");
-			return -1.0;
-		}
-		
-		// Will hold the rates for each year
-		double[] rates = new double[numyears];
-		
-		// Calculate the crime rate for each year for this borough
-		for(int i=0; i<years.length; i++) {
-			double CR = crimeRate(borough, years[i], stmt);
-			rates[i] = CR;
-			//TODO: get rid of all -1.0 values//error handling from crimeRate function
-		}
-		
-		// Calculate the derivative
-		
-		return 0.0;
-	}
+
 	
 	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
