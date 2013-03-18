@@ -283,7 +283,7 @@ public class COMP421PoliceDB {
 			ResultSet popcount = stmt.executeQuery(pop_query);
 			if( popcount.next() ) {
 				population = popcount.getDouble("POPULATION_COUNT");
-				System.out.println("Population of "+borough+" in "+year+": "+population);
+				//System.out.println("Population of "+borough+" in "+year+": "+population);
 			}
 			else {
 				return -1.0;
@@ -298,7 +298,7 @@ public class COMP421PoliceDB {
 			ResultSet numcrimes = stmt.executeQuery(numcrimes_query);
 			if(numcrimes.next()) {
 				crimecount = numcrimes.getDouble(1);
-				System.out.println("Number of crimes in "+borough+" in "+year+": "+crimecount);
+				//System.out.println("Number of crimes in "+borough+" in "+year+": "+crimecount);
 			}
 			else {
 				return -1.0;
@@ -504,6 +504,7 @@ public class COMP421PoliceDB {
 		public static void runStats(Statement statement) throws SQLException 
 		{
 			statement.clearBatch();
+			int selection;
 			
 			System.out.println("Please select one of the following options by typing the associated number:\n");
 			System.out.println("1. Conduct All Statiscal Analyses");
@@ -513,16 +514,68 @@ public class COMP421PoliceDB {
 			System.out.println("5. Police Station Budget Analysis");
 			System.out.println("6. Offenses per Age Group");
 			System.out.println("7. Offenses per Race");
-			System.out.println("7. Offenses per Gender");
+			System.out.println("8. Offenses per Gender");
+			
+			selection = getUserChoice_int("Your Selection: ");
+			
+			if(selection == 2)
+			{
+				showCrimeRates(statement);
+			}
+			else if(selection == 3)
+			{
+				showUnsolvedCrimes(statement);
+			}
 			
 			return;
 		}
 		
+		public static void showUnsolvedCrimes(Statement statement)
+		{
+			try {
+				
+				statement.clearBatch();
+				String query = "SELECT * FROM Offense WHERE ofid NOT IN (SELECT offense_ofid FROM Offender_Commits_Offense)";
+				
+				ResultSet offenseWithoutOffender = statement.executeQuery(query);
+				
+				while(offenseWithoutOffender.next())
+				{
+					Date dateCommitted = offenseWithoutOffender.getDate("date_committed");
+					String description = offenseWithoutOffender.getString("description");
+					String address = offenseWithoutOffender.getString("address");
+					
+					System.out.println("Date Committed: " + dateCommitted);
+					System.out.println("Description: " + description);
+					System.out.println("Address: " + address + "\n");
+					
+				}
+				
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
 		public static void showCrimeRates(Statement statement)
 		{
+			int year = getUserChoice_int("Enter year for crime rate analysis");
+			
 			try 
 			{
 				statement.clearBatch();
+				
+				ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
+				censusYear.next();
+				
+				if(censusYear.getInt(1) == 0)
+				{
+					System.out.println("Not a valid year. Goodybe: ");
+					return;
+				}
 				
 				List<String> listBoroughs = new ArrayList<String>();
 				ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
@@ -532,14 +585,20 @@ public class COMP421PoliceDB {
 					listBoroughs.add(boroughs.getString("name"));
 				}
 				
+				System.out.println("Showing crime rate for each borough in " + year);
 				
+				for(String borough : listBoroughs)
+				{
+					System.out.println(borough + ":     " + crimeRate(borough, year, statement) + " crimes/100000 people\n");
+					
+				}
 				
 				
 				
 					
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				System.out.println("Query could not be executed, please make another selection");
+				return;
 			}
 			
 			
