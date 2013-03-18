@@ -33,7 +33,7 @@ public class COMP421PoliceDB {
 			System.out.println("6. Calculate Police Officer Allocation");
 			System.out.println("7. Quit\n");
 			
-			int userin = getUserChoice_int("Your choice:");
+			int userin = getUserChoice_int("Your choice: ");
 			
 			if (userin == 1)
 			{
@@ -142,6 +142,111 @@ public class COMP421PoliceDB {
 		}
 	}
 	
+	//Method to walk user through creating a new offender record
+	//Takes as input the first and last name of the offender record
+	//to be created. Returns oid of new record if successful; else, returns
+	//-1
+	public static int createNewOffenderRecord(String fname, String lname, Statement statement)
+	{
+		//variables to be used 
+		String gender;
+		String race;
+		String address;
+		int yearob;
+		int monthob;	
+		int dayob;
+		int oid = -1;
+		
+		//obtain necessary information from user
+		System.out.println("A new record for this offender must be created.\n");
+		gender = getUserChoice_str("Gender (NOTE: must enter 'm' or 'f'): ");
+		if (!(gender.equals("m") || gender.equals("f")))
+		{
+			System.out.println("Must enter either 'm' or 'f' for gender. Please try again.\n");
+			return oid;
+		}
+		race = getUserChoice_str("Race: ");
+		address = getUserChoice_str("Address: ");
+		yearob = getUserChoice_int("Year of birth (NOTE: must enter a 4-digit number): ");
+		if (yearob > 9999 && yearob < 1000)
+		{
+			System.out.println("Must enter a 4-digit number representing the year of birth of this offender. Please try again.");
+			return oid;
+		}
+		monthob = getUserChoice_int("Month of birth (NOTE: must enter a number from 1 to 12): ");
+		if (monthob > 12 && monthob < 1)
+		{
+			System.out.println("Must enter a number from 1 to 12! Please try again.");
+			return oid;
+		}
+		dayob = getUserChoice_int("Day of birth: ");
+		if (dayob < 1 && dayob > 31)
+		{
+			System.out.println("Must enter a number from 1 to 31! Please try again");
+			return oid;
+		}
+		String dob = "" + yearob + "-" + monthob + "-" + dayob;
+		
+		//create query
+		String insertSQL = "INSERT INTO Offender (fname, lname, gender, race, address, dob) VALUES('"+ fname + "', '" + lname + "', '" + gender + "', '" + race + "', '" + address + "', '" + dob + "')";
+		//execute query
+	    try {
+			statement.executeUpdate(insertSQL);
+		} catch (SQLException e) {
+			//e.printStackTrace();
+			System.out.println("INSERT FAILED.");
+			return oid;
+		}
+	    
+	    
+	    //RETRIEVE OID FROM NEWLY CREATED TUPLE USING:
+	    String retrieveSQL = "SELECT SYSIBM.IDENTITY_VAL_LOCAL() AS id FROM Offender"; 
+	    try {
+			ResultSet lastEntered = statement.executeQuery(retrieveSQL);
+		    while (lastEntered.next())
+		    {
+		    	oid = (new Integer(lastEntered.getString("id"))).intValue();
+		    }
+
+			
+		} catch (SQLException e) {
+			//e.printStackTrace();
+			System.out.println("Attempt to retrieve OID of last Offender entered into database failed. Please try again (new offender will be in search results).\n");
+			return oid;
+		}
+
+	    return oid;
+		
+	}
+	
+	//present user with a list of boroughs, and then have them select one.
+	//returns string with name of borough
+	public static String selectBorough(Statement statement) throws SQLException 
+	{
+		//get all boroughs to list 
+		String borough = "SELECT * FROM Borough";
+		ResultSet boroughs = statement.executeQuery(borough);
+		int count = 1;
+		ArrayList<String> boroughList = new ArrayList<String>();
+		while (boroughs.next())
+		{
+			System.out.println(count + ": " + boroughs.getString("name"));
+			boroughList.add(boroughs.getString("name"));
+			count++;
+		}
+		int whichBorough = -1;
+		while (!(whichBorough > 0 && whichBorough < 20))
+		{
+			whichBorough = getUserChoice_int("\nIn which borough was this crime committed?: ");
+			//check for error in input
+			if (!(whichBorough > 0 && whichBorough < 20))
+			{
+				System.out.println("Please select a number from 1 to 19 to select a borough.");
+			}
+		}
+		return boroughList.get(whichBorough - 1);
+	}
+	
 //Look up whether a given person is a criminal
 	// If criminal exists return their criminal record
 	public static void isCriminal(Statement statement)
@@ -240,28 +345,290 @@ public class COMP421PoliceDB {
 			try
 			{
 				statement.clearBatch();
+				
+				//determine name of offender from user
 				System.out.println("Please enter the first and last name of the offender.\n");
 				String fname = getUserChoice_str("First name: ");
 				String lname = getUserChoice_str("Last name: ");
 				
-				/*ArrayList<>
-				String checkExists = "SELECT oid FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
+				//check if offender already exists in db
+				String checkExists = "SELECT * FROM Offender WHERE fname = '" + fname + "' AND lname = '" + lname + "'";
 				ResultSet info = statement.executeQuery(checkExists);
-				boolean empty = true;
+				int oid = -1;
+				ArrayList<Integer> candidates = new ArrayList<Integer>();
+				int count = 1;
+				//print out all  offenders matching the name input by user
+				System.out.println("\n**********************************************\n");
 				while (info.next())
 				{
-					empty = false;
+					candidates.add(new Integer(info.getString("oid")));
+					System.out.println("POSSIBLE MATCH #" + count);
 					System.out.println("\nFIRST NAME: " + info.getString("fname"));
 					System.out.println("LAST NAME: " + info.getString("lname"));
 					System.out.println("GENDER: " + info.getString("gender"));
 					System.out.println("RACE: " + info.getString("race"));
 					System.out.println("ADDRESS: " + info.getString("address"));
 					System.out.println("DATE OF BIRTH: " + info.getString("dob") + "\n");
+					count++;
 				}
-				if (empty)
+				//if there was more than one match, have user identify which offender 
+				//they want to add an offense for and set oid to the oid of that offender
+				//if none of the ones in the record are the correct one, also provide option to user
+				//to create a new record
+				if (candidates.size() > 1)	
+				{
+					
+					int choice = getUserChoice_int("\nSelect one of the above records to add an offense to by typing\n" +
+													" the number corresponding to the Offender of interest.\n" +
+													"If none of the above are correct, type 0 to create a new record: ");
+					//if choice was a valid choice
+					if (choice > -1 && choice < candidates.size() + 1)
+					{
+						//if choice was 0, create a new record
+						if (choice == 0)
+						{
+							oid = createNewOffenderRecord(fname, lname, statement);
+							//check for failure; if so, return to main menu
+							if (oid == -1)
+							{
+								System.out.println("An error occurred creating a new record. Please try again.\n");
+								return;
+							}
+						}
+						//otherwise set oid to oid of record selected
+						else
+						{
+							oid = candidates.get(choice - 1);
+						}
+					}
+					else 
+					{
+						System.out.println("\nThat is not a valid selection. Please try again.\n");
+						return;
+					}
+				}
+				//if there is only one match, then ask if this is the offender in question. If it is, 
+				//then set oid to the oid of that offender. If it's not, then continue to creating a
+				//new offender record
+				else if (candidates.size() == 1)
+				{
+					int choice = getUserChoice_int("\nThere is only one record that matches this name. If this\n" +
+										"is the right person, type 1. Else if you would like to create a new record\n" +
+										"type 0: ");
+					//make sure choice is a valid option (0 or 1)
+					if (choice == 1 || choice == 0)
+					{
+						//create a new record
+						if (choice == 0)
+						{
+							oid = createNewOffenderRecord(fname, lname, statement);
+							//check for failure
+							if (oid == -1)
+							{
+								System.out.println("An error occurred creating a new record. Please try again.\n");
+								return;
+							}
+						}
+						//else set oid to the record found
+						else
+						{
+							oid = candidates.get(0).intValue();
+						}
+					}
+				}
+				//if there were no matches found, create a new record
+				else if (candidates.isEmpty())
 				{
 					System.out.println("\nNO MATCHES FOUND!\n");
-				}*/
+					oid = createNewOffenderRecord(fname, lname, statement);
+					//check for failure
+					if (oid == -1)
+					{
+						System.out.println("An error occurred creating a new record. Please try again.\n");
+						return;
+					}
+				}
+
+				//System.out.println("OID IS: " + oid);
+				
+				//Now that we have the oid of the offender in question (phew) we need to
+				//create an offense entry
+				int offenseYear;
+				int offenseMonth;
+				int offenseDay;
+				String offenseDescription;
+				String offenseAddress;
+				int ofid = -1;
+				String borough;
+				
+				//obtain info about offense record from user
+				System.out.println("Please enter the following information about this offense:\n");
+				
+				offenseYear = getUserChoice_int("Year (NOTE: must enter a 4-digit number): ");
+				if (offenseYear > 9999 || offenseYear < 1000)
+				{
+					System.out.println("Must enter a 4-digit number. Please try again.");
+					return;
+				}
+				offenseMonth = getUserChoice_int("Month (NOTE: must enter a number from 1 to 12): ");
+				if (offenseMonth > 12 || offenseMonth < 1)
+				{
+					System.out.println("Must enter a number from 1 to 12! Please try again.");
+					return;
+				}
+				offenseDay = getUserChoice_int("Day: ");
+				if (offenseDay < 1 || offenseDay > 31)
+				{
+					System.out.println("Must enter a number from 1 to 31! Please try again");
+					return ;
+				}
+				offenseDescription = getUserChoice_str("Description: ");
+				offenseAddress = getUserChoice_str("Address of offense: ");
+				String date_committed = "" + offenseYear + "-" + offenseMonth + "-" + offenseDay;
+				
+				//insert offense record into db
+				String insertOffense = "INSERT INTO Offense (date_committed, description, address) VALUES ('" + date_committed + "', '" + offenseDescription + "', '" + offenseAddress + "')";
+				statement.executeUpdate(insertOffense);
+				
+				//acquire OFID of Offense just added from DB
+			    String retrieveSQL = "SELECT SYSIBM.IDENTITY_VAL_LOCAL() AS id FROM Offense"; 
+			    ResultSet newOffense = statement.executeQuery(retrieveSQL);
+			    while (newOffense.next())
+			    {
+			    	ofid = (new Integer(newOffense.getString("id"))).intValue();
+			    }
+				//link these to the offender in the offender_commits_offense relation
+			    String linkOffenderOffense = "INSERT INTO Offender_commits_offense VALUES (" + oid + "," + ofid + ")";
+				statement.executeUpdate(linkOffenderOffense);
+			    
+				//determine if this offense was a traffic violation or a crime
+				System.out.println("\nWas this offense a CRIME or a TRAFFIC VIOLATION?");
+				int choice = -1;
+				while (!(choice == 0 || choice == 1))
+				{
+					choice = getUserChoice_int("Please type 0 for a CRIME or 1 for a TRAFFIC VIOLATION: ");
+					if (!(choice == 0 || choice == 1))
+					{
+						System.out.println("YOU MUST ENTER A 0 OR A 1 TO CONTINUE!");
+					}
+				}
+				//obtain borough where this incident occurred
+				System.out.println("\nIn which borough did this incident occur?\n");
+				borough = selectBorough(statement);
+				
+				//if it was a crime, create an entry in the crime relation
+				if (choice == 0)
+				{
+					int severity = -1;
+					//get user to choose borough where the crime occurred					
+					
+					//get severity of crime
+					while (!(severity < 4 && severity > 0))
+					{
+						severity = getUserChoice_int("\nPlease input a number from 1 to 3 indicating the severity of this crime (higher = more severe): ");
+						//check for error in input
+						if (!(severity < 4 && severity > 0))
+						{
+							System.out.println("Please select a number from 1 to 3.");
+						}
+					}
+					
+					//insert this into the db
+					String insertCrime = "INSERT INTO Crime VALUES(" + ofid + ", '" + borough + "'," + severity + ")";
+					statement.executeUpdate(insertCrime);
+
+				}
+				//if it was a traffic violation, create an entry in the traffic violation relation
+				else 
+				{
+					String firstSN = getUserChoice_str("Enter name of first street: ");
+					String secondSN = getUserChoice_str("Enter name of second street: ");
+					boolean newTV = false;
+					int intersectionID = -1;
+					String intersectionMatch = "SELECT * FROM Intersection WHERE first_street_name = '" + firstSN + "' AND second_street_name = '" + secondSN + "' AND borough_bid = '" + borough + "'";
+					ResultSet intersectionMatches = statement.executeQuery(intersectionMatch);
+					count = 1;
+					ArrayList<Integer> intersections = new ArrayList<Integer>();
+					while (intersectionMatches.next())
+					{
+						System.out.println("First street name: " + intersectionMatches.getString("first_street_name") + " Second street name: " + intersectionMatches.getString("second_street_name") + " Borough: " + intersectionMatches.getString("borough_bid"));
+						intersections.add(new Integer(intersectionMatches.getString("iid")));
+						count++;
+					}
+					//if there were multiple matches, ask user to input choice or if they want to make a new one 
+					//and set intersectionID 
+					if (intersections.size() > 1)
+					{
+						choice = -1;
+						while (!(choice > -1 && choice < intersections.size() + 1))
+						{
+							choice = getUserChoice_int("Please select one of the above intersections. Otherwise,\n" +
+														"type 0 to create a new intersection record to use: ");
+							if (!(choice > -1 && choice < intersections.size() + 1))
+							{
+								System.out.println("You must type a valid number.");
+							}
+						}
+						if (choice == 0)
+						{
+							newTV = true;
+						}
+						else
+						{
+							intersectionID = intersections.get(choice - 1).intValue();
+						}
+					}
+					
+					//if there was only one match ask user if they want to use that one or create a new intersection
+					//and set intersectionID
+					else if (intersections.size() == 1)
+					{
+						choice = -1;
+						while (!(choice == 0 || choice == 1))
+						{
+							choice = getUserChoice_int("Only one record was found, if would you like to use this\n" +
+									"intersection type 0, otherwise to create a new one type 1: ");	
+							if(!(choice == 0 || choice == 1))
+							{
+								System.out.println("Please select either 0 or 1");
+							}
+						}
+						if (choice == 0)
+						{
+							intersectionID = intersections.get(0);
+						}
+						else
+						{
+							newTV = true;
+						}
+					
+					}
+					
+					//else if there were no matches
+					else 
+					{
+						newTV = true;
+					}
+					
+					//create new entry in intersection if newTV = true and set intersectionID to this result
+					if (newTV)
+					{
+						String insertNewIntersection = "INSERT INTO Intersection (first_street_name, second_street_name, borough_bid) VALUES('" + firstSN + "', '" + secondSN + "', '" + borough + "')";
+						statement.executeUpdate(insertNewIntersection);
+						String retrieveIntersection = "SELECT SYSIBM.IDENTITY_VAL_LOCAL() AS id FROM Intersection";
+						ResultSet lastEntered = statement.executeQuery(retrieveIntersection);
+						while (lastEntered.next())
+						{
+							intersectionID = (new Integer(lastEntered.getString("id"))).intValue();
+						}
+						
+					}
+					
+					//finally, insert into the traffic_violation relation
+					String insertTV = "INSERT INTO traffic_violation VALUES(" + ofid + "," + intersectionID + ")";
+					statement.executeUpdate(insertTV);
+
+				}
 			}
 			catch (SQLException e)
 			{
@@ -270,6 +637,7 @@ public class COMP421PoliceDB {
 				return;
 			}		
 			
+			System.out.println("\nCREATION OF NEW OFFENSE SUCCESSFUL\n");
 			return;
 		}
 	
