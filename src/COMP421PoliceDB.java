@@ -518,7 +518,11 @@ public class COMP421PoliceDB {
 			
 			selection = getUserChoice_int("Your Selection: ");
 			
-			if(selection == 2)
+			if(selection == 1)
+			{
+				allStatistics(statement);
+			}
+			else if(selection == 2)
 			{
 				showCrimeRates(statement);
 			}
@@ -530,6 +534,22 @@ public class COMP421PoliceDB {
 			return;
 		}
 		
+		public static void allStatistics(Statement statement)
+		{
+			try {
+				statement.clearBatch();
+				
+				showCrimeRates(statement);
+				showUnsolvedCrimes(statement);
+				
+				
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		
 		public static void showUnsolvedCrimes(Statement statement)
 		{
 			try {
@@ -538,6 +558,8 @@ public class COMP421PoliceDB {
 				String query = "SELECT * FROM Offense WHERE ofid NOT IN (SELECT offense_ofid FROM Offender_Commits_Offense)";
 				
 				ResultSet offenseWithoutOffender = statement.executeQuery(query);
+				
+				System.out.println("Showing Unsolved Crimes: \n");
 				
 				while(offenseWithoutOffender.next())
 				{
