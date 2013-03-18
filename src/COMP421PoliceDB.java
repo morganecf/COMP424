@@ -4,8 +4,7 @@ import java.util.InputMismatchException;
 import java.util.List;
 import java.util.Scanner;
 import java.util.Calendar;
-import java.util.List;
-import java.util.ArrayList;
+
 
 public class COMP421PoliceDB {
 
@@ -277,14 +276,15 @@ public class COMP421PoliceDB {
 			}
 			
 			statement.executeBatch();
+			
+			String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
+			
+			if(answer.equals("y"))
+			{
+				optimize(statement);
+			}
 		}
 		
-		String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
-		
-		if(answer.equals("y"))
-		{
-			optimize(statement);
-		}
 		
 	}
 	// Compile statistics
@@ -293,7 +293,46 @@ public class COMP421PoliceDB {
 	public static void runStats(Statement statement) throws SQLException 
 	{
 		statement.clearBatch();
+		
+		System.out.println("Please select one of the following options by typing the associated number:\n");
+		System.out.println("1. Conduct All Statiscal Analyses");
+		System.out.println("2. Borough crime rates");
+		System.out.println("3. Show unsolved crimes");
+		System.out.println("4. Traffic Violations per Intersection");
+		System.out.println("5. Police Station Budget Analysis");
+		System.out.println("6. Offenses per Age Group");
+		System.out.println("7. Offenses per Race");
+		System.out.println("7. Offenses per Gender");
+		
 		return;
+	}
+	
+	public static void showCrimeRates(Statement statement)
+	{
+		try 
+		{
+			statement.clearBatch();
+			
+			List<String> listBoroughs = new ArrayList<String>();
+			ResultSet boroughs = statement.executeQuery("SELECT * FROM Borough");
+			
+			while(boroughs.next())
+			{
+				listBoroughs.add(boroughs.getString("name"));
+			}
+			
+			
+			
+			
+			
+				
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
 	}
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
