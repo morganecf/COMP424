@@ -826,7 +826,7 @@ public class COMP421PoliceDB {
 			System.out.println("Please select a census year");
 			year = getUserChoice_int("Year: ");
 			
-			try {
+			try {		
 				statement.clearBatch();
 				
 				ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
@@ -898,6 +898,7 @@ public class COMP421PoliceDB {
 			System.out.println("4. Traffic Violations per Intersection");
 			System.out.println("5. Police Station Budget Analysis");
 			System.out.println("6. Offense Statistics");
+			System.out.println("7. Test This Shit");
 
 			
 			selection = getUserChoice_int("Your Selection: ");
@@ -1242,7 +1243,7 @@ public class COMP421PoliceDB {
 				
 				for(String borough : listBoroughs)
 				{
-					System.out.println(borough + ":     " + crimeRate(borough, year, statement) + " crimes/100000 people\n");
+					System.out.println("\n" + borough + "\n" + crimeRate(borough, year, statement) + " crimes/100000 people\n");
 					
 				}
 				
