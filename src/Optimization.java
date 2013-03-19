@@ -215,6 +215,11 @@ public class Optimization {
 	// One station per borough
 	public static double[][] createMatrix(Statement stmt, String borough) {
 		
+		// TODO: FIX SALARIES
+		
+		System.out.println("\n Determining efficient allocation of intervention officers, inspectors, K9 officers, patrol officers, and tactical officers");
+		System.out.println("\n Setting up linear programming problem...");
+		
 		// Find the average salary for each function
 		int[] salaries = averageSalary(borough, stmt);
 		
@@ -292,6 +297,9 @@ public class Optimization {
 	}
 	
 	public static int[] findOptimalDistribution(String borough, Statement stmt) {
+		
+		System.out.println("Running Simplex method...");
+		
 		double[][] all = createMatrix(stmt, borough);
 		
 		// Get individual components
@@ -311,14 +319,16 @@ public class Optimization {
 		// Index order in matrix: {Intervention, Investigator, K9, Patrol, Tactical}
 		String[] functions = {"Intervention", "Investigator", "K9", "Patrol", "Tactical"};
 		
+		System.out.println("\nOptimal allocation of police officers in borough "+borough);
 		// Take roof of these values and convert to integers
 		int[] officers = new int[5];
 		for(int i=0; i<5; i++) {
 			officers[i] = (int) Math.ceil(x[i]);
-			//System.out.println(functions[i]+":"+officers[i]);
+			System.out.println(functions[i]+":"+officers[i]);
 		}
 		
-		//System.out.println("Optimal total value: "+val);
+		System.out.println("Total optimal value: "+val);
+		System.out.println("================================");
 		
 		return officers;
 	}
@@ -497,6 +507,8 @@ public class Optimization {
 		// Get the feasible distributions 
 		int[][] feasible_distrib = feasibleDistributions(statement);
 		
+		System.out.println("\nNow updating PSID assignment as best as possible...");
+		
 		// Get police station IDs
 		List<Object> psids = policeStations(statement);
 		
@@ -578,6 +590,13 @@ public class Optimization {
 			
 		}
 		
+		System.out.println("\nNow firing left over police officers...");
+		System.out.println("There are "+intervention_poids.size()+" remaining intervention officers");
+		System.out.println("There are "+investigator_poids.size()+" remaining investigators");
+		System.out.println("There are "+K9_poids.size()+" remaining K9 officers");
+		System.out.println("There are "+patrol_poids.size()+" remaining patrol officers");
+		System.out.println("There are "+tactical_poids.size()+" remaining tactical officers");
+		
 		// Now fire the remaining officers, since don't need them!
 		fire(intervention_poids, statement);
 		fire(investigator_poids, statement);
@@ -587,11 +606,11 @@ public class Optimization {
 		
 		// Index order in matrix: {Intervention, Investigator, K9, Patrol, Tactical}
 	}
-
-	/*
 	
+	/*
 	public static void main(String[] args) {
-		db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
+		
+		DBConnect db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
 		Statement statement = db.getStatement();
 		
 		//int[][] feas_dist = feasibleDistributions(statement);

@@ -31,8 +31,8 @@ public class COMP421PoliceDB {
 			System.out.println("3. Increase Police Officer Salary");
 			System.out.println("4. Insert Census Information");
 			System.out.println("5. Compile Statistics");
-			System.out.println("6. Calculate Police Officer Allocation");
-			System.out.println("7. Quit\n");
+			System.out.println("6. Run Optimization Algorithm for Officer Allocation");
+			System.out.println("8. Quit\n");
 			
 			int userin = getUserChoice_int("Your choice: ");
 			
@@ -56,11 +56,11 @@ public class COMP421PoliceDB {
 			{
 				runStats(dbStatement);
 			}
-			else if (userin == 6)
+			else if (userin == 7)
 			{
 				optimize(dbStatement);
 			}
-			else if (userin == 7)
+			else if (userin == 8)
 			{
 				run = false;
 			}
@@ -225,7 +225,7 @@ public class COMP421PoliceDB {
 	
 	//present user with a list of boroughs, and then have them select one.
 	//returns string with name of borough
-	public static String selectBorough(Statement statement) throws SQLException 
+	public static String selectBorough(Statement statement, String message) throws SQLException 
 	{
 		//get all boroughs to list 
 		String borough = "SELECT * FROM Borough";
@@ -241,7 +241,7 @@ public class COMP421PoliceDB {
 		int whichBorough = -1;
 		while (!(whichBorough > 0 && whichBorough < 20))
 		{
-			whichBorough = getUserChoice_int("\nIn which borough was this crime committed?: ");
+			whichBorough = getUserChoice_int("\n"+message);
 			//check for error in input
 			if (!(whichBorough > 0 && whichBorough < 20))
 			{
@@ -337,7 +337,7 @@ public class COMP421PoliceDB {
 		return;
 	}
 	
-	// Add an offense to the database
+		// Add an offense to the database
 		// Prompts user if adding a traffic violatiostmtn or crime
 		// Prompts user for all other info (criminal name/location of crime/etc...)
 		// If traffic violation and occurred 5 years ago, don't add 
@@ -518,7 +518,7 @@ public class COMP421PoliceDB {
 				}
 				//obtain borough where this incident occurred
 				System.out.println("\nIn which borough did this incident occur?\n");
-				borough = selectBorough(statement);
+				borough = selectBorough(statement, "In which borough was this crime committed?: ");
 				
 				//if it was a crime, create an entry in the crime relation
 				if (choice == 0)
@@ -710,7 +710,7 @@ public class COMP421PoliceDB {
 	// Checks to see if combined salary of the officers in a station + non-salary expenses exceeds the budget
 	// Given new knowledge (increase of salary based on rank and percent)
 	public static boolean checkBudget(int police_station, int rank, double percent, Statement stmt) {
-		String q1 = "SELECT SUM(salary+salary*percent) FROM police_officer WHERE rank="+rank+" AND police_station_psid = "+police_station;
+		String q1 = "SELECT SUM(salary+salary*"+percent+") FROM police_officer WHERE rank="+rank+" AND police_station_psid = "+police_station;
 		String q2 = "SELECT COUNT(*) FROM police_officer WHERE police_station_psid = "+police_station;
 		String q3 = "SELECT budget FROM police_station WHERE psid= "+police_station;
 		String q4 = "SELECT non_salary_cost_per_officer FROM police_station WHERE psid = "+police_station;
@@ -720,7 +720,7 @@ public class COMP421PoliceDB {
 		int budget = query_int(q3, stmt, "budget");
 		int cost_per_officer = query_int(q4, stmt, "non-salary cost per officer");
 		
-		if(total_salary <= 0 || num_officers <= 0 || budget <= 0 || cost_per_officer <= 0) {
+		if(total_salary < 0 || num_officers < 0 || budget < 0 || cost_per_officer < 0) {
 			System.out.println("Not enough information available to perform budget calculations.");
 			return false;	// Return false for now
 			//Throw exception? 
@@ -730,10 +730,10 @@ public class COMP421PoliceDB {
 		}
 	}
 	
-	// Iterates through all police stations in a borough and returns those who are in the red
+	// Iterates through all police stations in a borough and returns those who are not in the red
 	public static List<Integer> checkBudgets(String borough, int rank, double percent, Statement stmt) {
 		List<Object> police_stations = new ArrayList<Object>();
-		List<Integer> red_stations = new ArrayList<Integer>();
+		List<Integer> good_stations = new ArrayList<Integer>();
 		
 		// Get all the police stations in a borough
 		try {
@@ -752,51 +752,55 @@ public class COMP421PoliceDB {
 		for(Object station_obj : police_stations) {
 			int station = (int) (Integer) station_obj;
 			if(!checkBudget(station, rank, percent, stmt)) {
-				red_stations.add((Integer)station);
+				good_stations.add((Integer)station);
 			}
 		}
 		
-		return red_stations;
+		return good_stations;
 		
 	}
 
 	//TODO: Test this!!
 	//TODO: make sure to check if ResultSet is empty or not!
 	//TODO: remove stack traces
+	
 	// Increase the salary of all police officers with ranking >= x, in a specific borough
 	// Increase by a certain percentage based on the crime rate of that borough
 	// Prompt user for ranking, percentage
 	// Have error handling if combined salary exceeds budget
 	public static void increaseSalary(Statement statement) throws SQLException {
 		statement.clearBatch();
-		String borough = getUserChoice_str("Enter borough: ");
-		int rank = getUserChoice_int("Enter rank: ");
-		double perc = ((double) getUserChoice_int("Enter percentage (%): "))/100.0;
+		//String borough = getUserChoice_str("Enter borough: ");
+		String borough = selectBorough(statement, "Select a borough in which police officers' salaries should be raised.");
+		int rank = getUserChoice_int("Enter rank (1-8) of police officers whose salaries should be raised: ");
+		double perc = ((double) getUserChoice_int("Enter percentage salaries should be raised by (1-100): "))/100.0;
 		
 		// Get the current year
 		int year = currentYear();
 		// Get the year before
 		int previousyear = previousYear(year, statement);
 		
-		// Calculate the if crime rate is going up or down in this borough
+		// Calculate if crime rate is going up or down in this borough
 		double current_crimerate = crimeRate(borough, year, statement);
 		double previous_crimerate = crimeRate(borough, previousyear, statement);
 		
-		System.out.println("Current crime rate: "+current_crimerate);
-		System.out.println("Previous crime rate: "+previous_crimerate);
+		//System.out.println("Current crime rate: "+current_crimerate);
+		//System.out.println("Previous crime rate: "+previous_crimerate);
 		
 		// If the crime rate has increased, increase the salaries of specified officers 
 		// Of the police stations of that borough
-		if(current_crimerate > 0  && previous_crimerate > 0 && previous_crimerate < current_crimerate) {
+		if(/*current_crimerate > 0  && previous_crimerate > 0 &&*/ previous_crimerate < current_crimerate) {
 			
 			// First check to see if updating will put any police stations in financial duress, remove these
 			List<Integer> good_stations = checkBudgets(borough, rank, perc, statement);
+			System.out.println("");
 			System.out.println("There are "+good_stations.size()+" stations that can be updated.");
 			
 			// Now only update those stations 
 			for(Integer gs : good_stations) {
 				int psid = (int) gs;
-				String query = "UPDATE police_officer SET salary = salary + salary*"+perc+" WHERE rank="+rank+" AND police_station_psid = "+psid;
+				String query = "UPDATE police_officer SET salary = salary + salary*"+perc+" " +
+						"WHERE rank="+rank+" AND police_station_psid = "+psid;
 				
 				try {
 					statement.executeUpdate(query);
@@ -810,13 +814,15 @@ public class COMP421PoliceDB {
 		}
 		
 		else {
-			System.out.println("Salaries should not be increased.");
+			System.out.println("Salaries should not be increased: crime rate has not increased.");
 		}
+		
+		System.out.println("");
 		
 		return;
 	}
 	
-	// Update the population with new census information 
+		// Update the population with new census information 
 		// Asks for the new population of each borough
 		// If the crime rate changes by a certain amount then ask user if want to reallocate, then run analyze() ??
 		public static void updatePopulation(Statement statement)  
@@ -1259,40 +1265,10 @@ public class COMP421PoliceDB {
 		}
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
-	// Should have modification option 
-	public static void optimize(Statement statement) throws SQLException {
-		statement.clearBatch();
-		return;
+	public static void optimize(Statement statement) {
+		System.out.println("\n Running optimization algorithm!");
+		Optimization.optimize(statement);
 	}
-	
-	/*public static void testRun()
-	{
-		ResultSet test = db.runQuery("SELECT * FROM Offender");
-		if (test != null)
-		{
-			boolean result = false;
-			try {Statement dbStatement = db.getStatement();
-				while (test.next())
-				{
-					result = true;
-					System.out.print("OID: " + test.getString("oid"));
-					System.out.print("Name: " + test.getString("fname") + " " + test.getString("lname"));
-					System.out.print("Gender: " + test.getString("gender"));
-					System.out.print("Race: " + test.getString("race"));
-					System.out.print("Address" + test.getString("address"));
-					System.out.println("Date of Birth" + test.getString("dob"));	
-				}
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.out.println("Main.optionOne(): SQL Exception caught while processing ResultSet.");
-			}
-			if (!result)
-			{
-				System.out.println("No results found.");
-			}
-		}
-	}*/
 
 }
 
