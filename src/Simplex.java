@@ -10,6 +10,8 @@
  *  RHS in column M+N, the objective function in row M, and
  *  slack variables in columns M through M+N-1.
  *
+ * SOURCE: http://algs4.cs.princeton.edu/65reductions/Simplex.java.html
+ *
  *************************************************************************/
 
 public class Simplex {
@@ -287,7 +289,7 @@ public class Simplex {
             System.out.println("y[" + j + "] = " + y[j]);
     }
 
-
+/*
     public static void main(String[] args) {
 
     	double[][] A = {{0, 0, 0, -1, 0}, 
@@ -296,42 +298,12 @@ public class Simplex {
     					{0, -1, 0, -1, 0}, 
     					{1, 1, 1, 1, 1}, 
     					{60000, 45000, 60000, 45000, 125000}, 
-    					{0, 1, 0, 0, 0}};
-    	double[] b = {-3, -5, -10, -20, 50, 508331, 3};
+    					{0, 1, 0, 0, 0},
+    					{0, 0, 0, 0, 1}};
+    	double[] b = {-3, -5, -10, -20, 50, 508331, 3, 6};
     	double[] c = {1, 1, 1, 1, 1};
     	    	
     	test(A, b, c);
-    	    	/*
-    	try                 { test1();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
 
-        try                 { test2();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-        try                 { test3();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-        try                 { test4();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-
-        int M = Integer.parseInt(args[0]);
-        int N = Integer.parseInt(args[1]);
-        double[] c = new double[N];
-        double[] b = new double[M];
-        double[][] A = new double[M][N];
-        for (int j = 0; j < N; j++)
-            c[j] = StdRandom.uniform(1000);
-        for (int i = 0; i < M; i++)
-            b[i] = StdRandom.uniform(1000);
-        for (int i = 0; i < M; i++)
-            for (int j = 0; j < N; j++)
-                A[i][j] = StdRandom.uniform(100);
-        Simplex lp = new Simplex(A, b, c);
-        System.out.println(lp.value()); */
-    } 
+    } */
 }

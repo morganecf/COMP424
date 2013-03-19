@@ -14,8 +14,8 @@ public class Optimization {
 		this.statement = statement;
 	}*/
 	
-	// Retrieve the average salary for each function in a borough
-	public static int[] averageSalary(String borough, Statement stmt) {
+	// Retrieve the average salary for each function 
+	public static int[] averageSalary(Statement stmt) {
 		int[] salaries = new int[11]; 	//hardcoded because never changes
 		try {
 			ResultSet rs = stmt.executeQuery("SELECT AVG(salary) FROM police_officer GROUP BY function");
@@ -26,7 +26,7 @@ public class Optimization {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
-			System.out.println("Unable to retreive average salaries from borough "+borough);
+			System.out.println("Unable to retreive average salaries");
 		}
 		return salaries;
 	}
@@ -117,7 +117,6 @@ public class Optimization {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
-		//System.out.println(numtypes[4]+" | "+numtypes[5]+" | "+numtypes[6]+" | "+numtypes[8]+" | "+numtypes[10]);
 		return numtypes;
 	}
 	
@@ -221,7 +220,7 @@ public class Optimization {
 		System.out.println("\n Setting up linear programming problem...");
 		
 		// Find the average salary for each function
-		int[] salaries = averageSalary(borough, stmt);
+		int[] salaries = averageSalary(stmt);
 		
 		// Find the number of each type (function) of officer in the borough
 		int[] numtypes = numOfficer(borough, stmt);
@@ -240,13 +239,15 @@ public class Optimization {
 		// Get the number of distinct traffic intersections in the borough
 		int intersections = intersections(stmt, borough);
 		
+		// TODO: Could use more of these values
+		
 		// Get the number of offenses/crimes/traffic violations/crimes by severity committed in this borough
-		int offenses = numOffenses("offense", 0, borough, stmt);
-		int violations = numOffenses("traffic", 0, borough, stmt);
+		//int offenses = numOffenses("offense", 0, borough, stmt);
+		//int violations = numOffenses("traffic", 0, borough, stmt);
 		int crimes = numOffenses("crime", 0, borough, stmt);
 		int crimes_1 = numOffenses("crime", 1, borough, stmt);
 		int crimes_2 = numOffenses("crime", 2, borough, stmt);
-		int crimes_3 = numOffenses("crime", 3, borough, stmt);
+		//int crimes_3 = numOffenses("crime", 3, borough, stmt);
 		
 		// Index order of police functions:
 		// 0-Chief Inspector, 1-Commander, 2-Constable, 3-Inspector, 4-Intervention, 5-Investigator, 6-K9
@@ -290,6 +291,17 @@ public class Optimization {
 		
 		// Vector b
 		double[] b = {v1, v2, v3, v4, v5, v6, v7};
+		
+		System.out.println("Borough: "+borough);
+		System.out.println("Number of intersections: "+intersections);
+		System.out.println("Number of crimes: "+crimes);
+		System.out.println("Number of crimes type 2: "+crimes_2);
+		System.out.println("Number of crimes type 1: "+crimes_1);
+		System.out.println("Number of commanders * 50: "+v5);
+		System.out.println("Budget: "+budget);
+		System.out.println("Salary of others (approximate): "+other_salaries);
+		System.out.println("Total cost of this station: "+total_cost);
+		System.out.println("Remaining budget: "+remaining);
 		
 		// Put all the vectors in a matrix
 		double[][] A = {C, row1, row2, row3, row4, row5, row6, row7, b};
@@ -356,18 +368,21 @@ public class Optimization {
 	}
 	
 	public static int[] distribute(int[] current_totals, int[] opt_totals, int[] opt_distrib) {
-		int[] feasible = new int[5];
+		double[] feasible = new double[5];
 		for(int i=0; i<5; i++) {
 			if(opt_totals[i] == 0) {
 				feasible[i] = 0;
 			}
 			else {
-				feasible[i] = current_totals[i] * (opt_distrib[i]/opt_totals[i]);
+				feasible[i] = (double) current_totals[i] * ((double)opt_distrib[i]/(double)opt_totals[i]);
 			}
 		}
-		return feasible;
+		int[] feasible_int = new int[5];
+		for(int i=0; i<5; i++) { feasible_int[i] = (int) Math.ceil(feasible[i]); }
+		return feasible_int;
 	}
 	
+	/*
 	// Calculate the feasible distributions for all of the boroughs given current and opt distribution
 	// Rank by crime rate
 	public static int[][] feasibleDistributions(Statement stmt) {
@@ -395,24 +410,6 @@ public class Optimization {
 			crime_rate[i] = crimeRate(boroughs.get(i), curr_year, stmt);
 		}
 		
-		/*
-		System.out.println("============= CURRENT DISTRIBUTIONS ============");
-		for(int i=0; i<total; i++) {
-			System.out.println("Station "+i);
-			for(int j=0; j<5; j++) {
-				System.out.print(current_distribs[i][j]+" | ");
-			}
-		}
-		
-		System.out.println("============= OPTIMAL DISTRIBUTIONS ============");
-		for(int i=0; i<total; i++) {
-			System.out.println("Station "+i);
-			for(int j=0; j<5; j++) {
-				System.out.print(opt_distribs[i][j]+" | ");
-			}
-		}
-		*/
-		
 		// Current and optimal totals of each type of officer
 		int[] current_totals = new int[5];
 		int[] opt_totals = new int[5];
@@ -421,12 +418,17 @@ public class Optimization {
 			opt_totals[i] = sum(opt_distribs, i);
 		}
 		
+	//	for(int i=0; i<current_totals.length; i++) {
+	//		System.out.println("Current total of type "+i+": "+current_totals[i]);
+	//		System.out.println("Optimal total of type "+i+": "+opt_totals[i]);
+	//	}
+		
 		// Now find the feasible distributions
 		// Boroughs with highest crime rates get first choice (greedy method)
 		for(int i=0; i<total; i++) {
 			int max_ind = max(crime_rate);
 			// Get the feasible distribution for this borough
-			feasible_distribs[max_ind] = distribute(current_totals, opt_totals, opt_distribs[i]);
+			feasible_distribs[max_ind] = distribute(current_totals, opt_totals, opt_distribs[max_ind]);
 			// Now decrement values 
 			for(int j=0; j<5; j++) {
 				current_totals[j] = current_totals[j] - feasible_distribs[max_ind][j];
@@ -435,8 +437,40 @@ public class Optimization {
 			crime_rate[max_ind] = -1;
 		}
 		
+		System.out.println("\n\n");
+		System.out.println("Intervention | Investigator | K9 | Patrol | Tactical");
+		
+		System.out.println("******************* CURRENT DISTRIBUTIONS *******************");
+		for(int i=0; i<total; i++) {
+			System.out.print("Station "+(i+1)+"\t");
+			for(int j=0; j<5; j++) {
+				System.out.print(current_distribs[i][j]+" | ");
+			}
+			System.out.println("");
+		}
+		
+		System.out.println("******************* OPTIMAL DISTRIBUTIONS *******************");
+		for(int i=0; i<total; i++) {
+			System.out.print("Station "+(i+1)+"\t");
+			for(int j=0; j<5; j++) {
+				System.out.print(opt_distribs[i][j]+" | ");
+			}
+			System.out.println("");
+		}
+		
+		System.out.println("******************* FEASIBLE DISTRIBUTIONS *******************");
+		for(int i=0; i<total; i++) {
+			System.out.print("Station "+(i+1)+"\t");
+			for(int j=0; j<5; j++) {
+				System.out.print(feasible_distribs[i][j]+" | ");
+			}
+			System.out.println("");
+		}
+		
+		
 		return feasible_distribs; 
 	}
+	*/
 	
 	public static List<Object> getOfficerPOIDs(Statement stmt, String function) {
 		List<Object> poids = new ArrayList<Object>();
@@ -497,15 +531,54 @@ public class Optimization {
 
 	// Randomly distribute each type of police officer to police stations based on the results of feasible distributions
 	public static void optimize(Statement statement) {
+		
+		// Get the current and optimal distributions to display 
+		List<String> boroughs = getBoroughs(statement);
+		int total = boroughs.size();
+		int[][] current_distribs = new int[total][5];
+		int[][] opt_distribs = new int[total][5];
+		
+		//double[] crime_rate = new double[total];
+		//int curr_year = currentYear();
+				
+		// Find the current and optimal distributions for all 19 boroughs
+		// Find the crime rate for each of 19 boroughs
+		for(int i=0; i<total; i++) {
+			// Current
+			int[] nums = numOfficer(boroughs.get(i), statement);
+			int[] rowc = {nums[4], nums[5], nums[6], nums[8], nums[10]};
+			current_distribs[i] = rowc;
+			// Optimal
+			int[] rowo = findOptimalDistribution(boroughs.get(i), statement);
+			opt_distribs[i] = rowo;
+			// Crime rate
+			//crime_rate[i] = crimeRate(boroughs.get(i), curr_year, statement);
+		}
+		
+		System.out.println("******************* CURRENT DISTRIBUTIONS *******************");
+		for(int i=0; i<total; i++) {
+			System.out.print("Station "+(i+1)+"\t");
+			for(int j=0; j<5; j++) {
+				System.out.print(current_distribs[i][j]+" | ");
+			}
+			System.out.println("");
+		}
+		
+		System.out.println("******************* OPTIMAL DISTRIBUTIONS *******************");
+		for(int i=0; i<total; i++) {
+			System.out.print("Station "+(i+1)+"\t");
+			for(int j=0; j<5; j++) {
+				System.out.print(opt_distribs[i][j]+" | ");
+			}
+			System.out.println("");
+		}
+		
 		// Get all the POIDs for each type of officer
 		List<Object> intervention_poids = getOfficerPOIDs(statement, "Intervention");
 		List<Object> investigator_poids = getOfficerPOIDs(statement, "Investigator");
 		List<Object> K9_poids = getOfficerPOIDs(statement, "K9");
 		List<Object> patrol_poids = getOfficerPOIDs(statement, "Patrol Officer");
 		List<Object> tactical_poids = getOfficerPOIDs(statement, "Tactical");
-		
-		// Get the feasible distributions 
-		int[][] feasible_distrib = feasibleDistributions(statement);
 		
 		System.out.println("\nNow updating PSID assignment as best as possible...");
 		
@@ -519,71 +592,86 @@ public class Optimization {
 			int psid = (int) (Integer) psids.get(i);
 			
 			//Randomly distribute all the intervention officers
-			while(feasible_distrib[i][0] > 0 || !intervention_poids.isEmpty()) {
-				int index = (int) (Math.random()*intervention_poids.size());
+			while(opt_distribs[i][0] > 0 || !intervention_poids.isEmpty()) {
+				if(intervention_poids.size() == 0) {
+					break;
+				}
+				int index = (int) (Math.random()*(intervention_poids.size()-1));
 				int poid = (int) (Integer) intervention_poids.get(index);
 				
 				// Update the database - assign this police officer the current police station
-				update(poid, psid, statement);
+				//update(poid, psid, statement);
 				
 				// Decrement officers needed for this police station
-				feasible_distrib[i][0] --;
+				opt_distribs[i][0] --;
 				// Remove the officer that was assigned this police station
 				intervention_poids.remove(index);
 			}
 			
 			//Randomly distribute all the investigators
-			while(feasible_distrib[i][0] > 0 || !investigator_poids.isEmpty()) {
+			while(opt_distribs[i][0] > 0 || !investigator_poids.isEmpty()) {
+				if(investigator_poids.size() == 0) {
+					break;
+				}
 				int index = (int) (Math.random()*investigator_poids.size());
 				int poid = (int) (Integer) investigator_poids.get(index);
 				
 				// Update the database - assign this police officer the current police station
-				update(poid, psid, statement);
+				//update(poid, psid, statement);
 				
 				// Decrement officers needed for this police station
-				feasible_distrib[i][1] --;
+				opt_distribs[i][1] --;
 				// Remove the officer that was assigned this police station
 				investigator_poids.remove(index);
 			}
 			
 			// Randomly distribute all the K9 officers
-			while(feasible_distrib[i][0] > 0 || !K9_poids.isEmpty()) {
+			while(opt_distribs[i][0] > 0 || !K9_poids.isEmpty()) {
+				if(K9_poids.size() == 0) {
+					break;
+				}
 				int index = (int) (Math.random()*K9_poids.size());
 				int poid = (int) (Integer) K9_poids.get(index);
 				
 				// Update the database - assign this police officer the current police station
-				update(poid, psid, statement);
+				//update(poid, psid, statement);
 				
 				// Decrement officers needed for this police station
-				feasible_distrib[i][2] --;
+				opt_distribs[i][2] --;
 				// Remove the officer that was assigned this police station
 				K9_poids.remove(index);
 			}
 			
 			// Randomly distribute all the patrol officers
-			while(feasible_distrib[i][0] > 0 || !patrol_poids.isEmpty()) {
+			while(opt_distribs[i][0] > 0 || !patrol_poids.isEmpty()) {
+				if(patrol_poids.size() == 0) {
+					break;
+				}
 				int index = (int) (Math.random()*patrol_poids.size());
 				int poid = (int) (Integer) patrol_poids.get(index);
 				
 				// Update the database - assign this police officer the current police station
-				update(poid, psid, statement);
+				//update(poid, psid, statement);
 				
 				// Decrement officers needed for this police station
-				feasible_distrib[i][3] --;
+				opt_distribs[i][3] --;
 				// Remove the officer that was assigned this police station
 				patrol_poids.remove(index);
 			}
 			
 			// Randomly distribute all the tactical officers
-			while(feasible_distrib[i][0] > 0 || !tactical_poids.isEmpty()) {
+			while(opt_distribs[i][0] > 0 || !tactical_poids.isEmpty()) {
+				if(tactical_poids.size() == 0) {
+					break;
+				}
 				int index = (int) (Math.random()*tactical_poids.size());
 				int poid = (int) (Integer) tactical_poids.get(index);
 				
 				// Update the database - assign this police officer the current police station
-				update(poid, psid, statement);
+				//update(poid, psid, statement);
 				
 				// Decrement officers needed for this police station
-				feasible_distrib[i][4] --;
+				opt_distribs[i][4] --;
 				// Remove the officer that was assigned this police station
 				tactical_poids.remove(index);
 			}
@@ -598,26 +686,25 @@ public class Optimization {
 		System.out.println("There are "+tactical_poids.size()+" remaining tactical officers");
 		
 		// Now fire the remaining officers, since don't need them!
-		fire(intervention_poids, statement);
-		fire(investigator_poids, statement);
-		fire(K9_poids, statement);
-		fire(patrol_poids, statement);
-		fire(tactical_poids, statement);
+	//	fire(intervention_poids, statement);
+	//	fire(investigator_poids, statement);
+	//	fire(K9_poids, statement);
+	//	fire(patrol_poids, statement);
+	//	fire(tactical_poids, statement);
 		
-		// Index order in matrix: {Intervention, Investigator, K9, Patrol, Tactical}
 	}
 	
+
 	/*
 	public static void main(String[] args) {
 		
 		DBConnect db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
 		Statement statement = db.getStatement();
-		
-		//int[][] feas_dist = feasibleDistributions(statement);
-		
-		//optimize(statement);
+						
+		optimize(statement);
 		
 		//update(6, 16, statement);
+		
 		
 		List<Object> test = new ArrayList<Object>();
 		Object sample = (Object) (Integer) 22;
@@ -628,10 +715,7 @@ public class Optimization {
 			for(int j=0; j<5; j++) {
 				System.out.println("Station "+i+", officer type "+j+": "+feas_dist[i][j]);
 			}
-		}
-		
-		// TODO: make sure that feasible distribution matrix and boroughs/psids match up!
-		// TODO: Write outline of methodology
+		}		
 		
 		// Test runs
 		System.out.println("========LACHINE========");
@@ -644,11 +728,17 @@ public class Optimization {
 		findOptimalDistribution("Outremont", statement);
 		System.out.println("=========SAINT-LAURENT=======");
 		findOptimalDistribution("Saint-Laurent", statement); 
+		System.out.println("=========ANJOU=======");
+		findOptimalDistribution("Anjou", statement); 
+		System.out.println("=========AHUNTSIC-CARTIERVILLE=======");
+		findOptimalDistribution("Ahuntsic-Cartierville", statement); 
+		System.out.println("=========COTE-DES-NEIGES=======");
+		findOptimalDistribution("Cote-des-Neiges", statement); 
+		
 		
 		try {
 			statement.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("Couldn't close.");
 		}
