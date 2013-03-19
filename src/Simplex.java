@@ -10,6 +10,8 @@
  *  RHS in column M+N, the objective function in row M, and
  *  slack variables in columns M through M+N-1.
  *
+ * SOURCE: http://algs4.cs.princeton.edu/65reductions/Simplex.java.html
+ *
  *************************************************************************/
 
 public class Simplex {
