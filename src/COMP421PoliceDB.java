@@ -902,7 +902,6 @@ public class COMP421PoliceDB {
 			System.out.println("4. Traffic Violations per Intersection");
 			System.out.println("5. Police Station Budget Analysis");
 			System.out.println("6. Offense Statistics");
-			System.out.println("7. Test This Shit");
 
 			
 			selection = getUserChoice_int("Your Selection: ");
