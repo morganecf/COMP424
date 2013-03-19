@@ -246,11 +246,11 @@ public class COMP421PoliceDB {
 			
 			if(rowsDeleted > 0)
 			{
-				System.out.println("Offenders without Offenses have been deleted");
+				System.out.println("Offenders without Offenses have been deleted\n");
 			}
 			else
 			{
-				System.out.println("All Offenders have an associated offense");
+				System.out.println("All Offenders have an associated offense\n");
 			}
 			
 		} catch (SQLException e) {
