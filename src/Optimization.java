@@ -239,13 +239,15 @@ public class Optimization {
 		// Get the number of distinct traffic intersections in the borough
 		int intersections = intersections(stmt, borough);
 		
+		// TODO: Could use more of these values
+		
 		// Get the number of offenses/crimes/traffic violations/crimes by severity committed in this borough
-		int offenses = numOffenses("offense", 0, borough, stmt);
-		int violations = numOffenses("traffic", 0, borough, stmt);
+		//int offenses = numOffenses("offense", 0, borough, stmt);
+		//int violations = numOffenses("traffic", 0, borough, stmt);
 		int crimes = numOffenses("crime", 0, borough, stmt);
 		int crimes_1 = numOffenses("crime", 1, borough, stmt);
 		int crimes_2 = numOffenses("crime", 2, borough, stmt);
-		int crimes_3 = numOffenses("crime", 3, borough, stmt);
+		//int crimes_3 = numOffenses("crime", 3, borough, stmt);
 		
 		// Index order of police functions:
 		// 0-Chief Inspector, 1-Commander, 2-Constable, 3-Inspector, 4-Intervention, 5-Investigator, 6-K9
@@ -690,10 +692,10 @@ public class Optimization {
 	//	fire(patrol_poids, statement);
 	//	fire(tactical_poids, statement);
 		
-		// Index order in matrix: {Intervention, Investigator, K9, Patrol, Tactical}
 	}
 	
-	
+
+	/*
 	public static void main(String[] args) {
 		
 		DBConnect db = new DBConnect("jdbc:db2://db2.cs.mcgill.ca:50000/cs421", "cs421g10", "LewVe-g5");
@@ -703,7 +705,7 @@ public class Optimization {
 		
 		//update(6, 16, statement);
 		
-		/*
+		
 		List<Object> test = new ArrayList<Object>();
 		Object sample = (Object) (Integer) 22;
 		test.add(sample);
@@ -713,11 +715,8 @@ public class Optimization {
 			for(int j=0; j<5; j++) {
 				System.out.println("Station "+i+", officer type "+j+": "+feas_dist[i][j]);
 			}
-		}*/
+		}		
 		
-		// TODO: make sure that feasible distribution matrix and boroughs/psids match up!
-		
-		/*
 		// Test runs
 		System.out.println("========LACHINE========");
 		findOptimalDistribution("Lachine", statement);
@@ -735,15 +734,14 @@ public class Optimization {
 		findOptimalDistribution("Ahuntsic-Cartierville", statement); 
 		System.out.println("=========COTE-DES-NEIGES=======");
 		findOptimalDistribution("Cote-des-Neiges", statement); 
-		*/
+		
 		
 		try {
 			statement.close();
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 			System.out.println("Couldn't close.");
 		}
 	}
-	
+	*/
 }

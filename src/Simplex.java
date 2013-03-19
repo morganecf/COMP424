@@ -289,7 +289,7 @@ public class Simplex {
             System.out.println("y[" + j + "] = " + y[j]);
     }
 
-
+/*
     public static void main(String[] args) {
 
     	double[][] A = {{0, 0, 0, -1, 0}, 
@@ -298,11 +298,12 @@ public class Simplex {
     					{0, -1, 0, -1, 0}, 
     					{1, 1, 1, 1, 1}, 
     					{60000, 45000, 60000, 45000, 125000}, 
-    					{0, 1, 0, 0, 0}};
-    	double[] b = {-3, -5, -10, -20, 50, 508331, 3};
+    					{0, 1, 0, 0, 0},
+    					{0, 0, 0, 0, 1}};
+    	double[] b = {-3, -5, -10, -20, 50, 508331, 3, 6};
     	double[] c = {1, 1, 1, 1, 1};
     	    	
     	test(A, b, c);
 
-    } 
+    } */
 }
