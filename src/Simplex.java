@@ -301,37 +301,6 @@ public class Simplex {
     	double[] c = {1, 1, 1, 1, 1};
     	    	
     	test(A, b, c);
-    	    	/*
-    	try                 { test1();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
 
-        try                 { test2();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-        try                 { test3();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-        try                 { test4();             }
-        catch (Exception e) { e.printStackTrace(); }
-        System.out.println("--------------------------------");
-
-
-        int M = Integer.parseInt(args[0]);
-        int N = Integer.parseInt(args[1]);
-        double[] c = new double[N];
-        double[] b = new double[M];
-        double[][] A = new double[M][N];
-        for (int j = 0; j < N; j++)
-            c[j] = StdRandom.uniform(1000);
-        for (int i = 0; i < M; i++)
-            b[i] = StdRandom.uniform(1000);
-        for (int i = 0; i < M; i++)
-            for (int j = 0; j < N; j++)
-                A[i][j] = StdRandom.uniform(100);
-        Simplex lp = new Simplex(A, b, c);
-        System.out.println(lp.value()); */
     } 
 }
