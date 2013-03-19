@@ -517,7 +517,7 @@ public class COMP421PoliceDB {
 					}
 				}
 				//obtain borough where this incident occurred
-				System.out.println("\nIn which borough did this incident occur?\n");
+				//System.out.println("\nIn which borough did this incident occur?\n");
 				borough = selectBorough(statement, "In which borough was this crime committed?: ");
 				
 				//if it was a crime, create an entry in the crime relation
@@ -832,7 +832,7 @@ public class COMP421PoliceDB {
 			System.out.println("Please select a census year");
 			year = getUserChoice_int("Year: ");
 			
-			try {
+			try {		
 				statement.clearBatch();
 				
 				ResultSet censusYear = statement.executeQuery("SELECT Count(*) FROM Population WHERE year = " + year);
@@ -877,9 +877,7 @@ public class COMP421PoliceDB {
 						optimize(statement);
 					}
 				}
-				
-				
-				
+			
 				
 			} catch (SQLException e) {
 				System.err.println(" msg: " + e.getMessage() + " code: " + e.getErrorCode() + " state: " + e.getSQLState());
@@ -1248,7 +1246,7 @@ public class COMP421PoliceDB {
 				
 				for(String borough : listBoroughs)
 				{
-					System.out.println(borough + ":     " + crimeRate(borough, year, statement) + " crimes/100000 people\n");
+					System.out.println("\n" + borough + "\n" + crimeRate(borough, year, statement) + " crimes/100000 people\n");
 					
 				}
 				
@@ -1261,6 +1259,36 @@ public class COMP421PoliceDB {
 			
 			
 		}
+
+	
+	/*public static void testRun()
+	{
+		ResultSet test = db.runQuery("SELECT * FROM Offender");
+		if (test != null)
+		{
+			boolean result = false;
+			try {Statement dbStatement = db.getStatement();
+				while (test.next())
+				{
+					result = true;
+					System.out.print("OID: " + test.getString("oid"));
+					System.out.print("Name: " + test.getString("fname") + " " + test.getString("lname"));
+					System.out.print("Gender: " + test.getString("gender"));
+					System.out.print("Race: " + test.getString("race"));
+					System.out.print("Address" + test.getString("address"));
+					System.out.println("Date of Birth" + test.getString("dob"));	
+				}
+			} catch (SQLException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				System.out.println("Main.optionOne(): SQL Exception caught while processing ResultSet.");
+			}
+			if (!result)
+			{
+				System.out.println("No results found.");
+			}
+		}
+	}*/
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
 	public static void optimize(Statement statement) {
