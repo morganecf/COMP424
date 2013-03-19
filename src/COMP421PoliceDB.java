@@ -57,10 +57,6 @@ public class COMP421PoliceDB {
 			}
 			else if (userin == 6)
 			{
-				optimize(dbStatement);
-			}
-			else if (userin == 7)
-			{
 				run = false;
 			}
 			else if (userin == -1)
@@ -860,12 +856,12 @@ public class COMP421PoliceDB {
 				
 				statement.executeBatch();
 				
-				String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
+			/*	String answer = getUserChoice_str("Would you like to reallocate resources based on new census data? (y/n)");
 				
 				if(answer.equals("y"))
 				{
 					optimize(statement);
-				}
+				}*/
 			}
 			
 			
@@ -1090,13 +1086,7 @@ public class COMP421PoliceDB {
 			
 			
 		}
-	
-	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
-	// Should have modification option 
-	public static void optimize(Statement statement) throws SQLException {
-		statement.clearBatch();
-		return;
-	}
+
 	
 	/*public static void testRun()
 	{

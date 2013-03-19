@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/usr/local/pkgs/IBM/db2/V9.1/java/db2jcc.jar"/>
-	<classpathentry kind="lib" path="/usr/local/pkgs/IBM/db2/V9.1/java/db2jcc_license_cu.jar"/>
+	<classpathentry kind="lib" path="/Users/nic/Documents/workspace/comp361/jars/db2jcc.jar"/>
+	<classpathentry kind="lib" path="/Users/nic/Documents/workspace/comp361/jars/db2jcc_license_cu.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
