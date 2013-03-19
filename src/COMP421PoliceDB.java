@@ -1077,6 +1077,7 @@ public class COMP421PoliceDB {
 			
 		}
 		
+		// method to display statistics for offenses
 		public static void offenseStatistics(Statement statement)
 		{
 			System.out.println("\n------Showing offense statistics------\n");
@@ -1137,6 +1138,8 @@ public class COMP421PoliceDB {
 			}
 		}
 		
+		// method for running budget analysis for all police stations
+		// takes budget - salary - nonsalary cost
 		public static void policeStationBudgetAnalysis(Statement statement)
 		{
 			try 
@@ -1376,36 +1379,6 @@ public class COMP421PoliceDB {
 			
 			
 		}
-
-	
-	/*public static void testRun()
-	{
-		ResultSet test = db.runQuery("SELECT * FROM Offender");
-		if (test != null)
-		{
-			boolean result = false;
-			try {Statement dbStatement = db.getStatement();
-				while (test.next())
-				{
-					result = true;
-					System.out.print("OID: " + test.getString("oid"));
-					System.out.print("Name: " + test.getString("fname") + " " + test.getString("lname"));
-					System.out.print("Gender: " + test.getString("gender"));
-					System.out.print("Race: " + test.getString("race"));
-					System.out.print("Address" + test.getString("address"));
-					System.out.println("Date of Birth" + test.getString("dob"));	
-				}
-			} catch (SQLException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				System.out.println("Main.optionOne(): SQL Exception caught while processing ResultSet.");
-			}
-			if (!result)
-			{
-				System.out.println("No results found.");
-			}
-		}
-	}*/
 	
 	// Optimization algorithm - efficient allocation of salary/police officers based on crime rate and crime types
 	public static void optimize(Statement statement) {
