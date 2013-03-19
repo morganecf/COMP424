@@ -32,7 +32,7 @@ public class COMP421PoliceDB {
 			System.out.println("4. Insert Census Information");
 			System.out.println("5. Compile Statistics");
 			System.out.println("6. Run Optimization Algorithm for Officer Allocation");
-			System.out.println("8. Quit\n");
+			System.out.println("7. Quit\n");
 			
 			int userin = getUserChoice_int("Your choice: ");
 			
@@ -56,11 +56,11 @@ public class COMP421PoliceDB {
 			{
 				runStats(dbStatement);
 			}
-			else if (userin == 7)
+			else if (userin == 6)
 			{
 				optimize(dbStatement);
 			}
-			else if (userin == 8)
+			else if (userin == 7)
 			{
 				run = false;
 			}
@@ -1253,8 +1253,6 @@ public class COMP421PoliceDB {
 				}
 				
 				
-				
-					
 			} catch (SQLException e) {
 				System.err.println(" msg: " + e.getMessage() + " code: " + e.getErrorCode() + " state: " + e.getSQLState());
 				return;
