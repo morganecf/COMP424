@@ -216,8 +216,8 @@ public class Optimization {
 		
 		// TODO: FIX SALARIES
 		
-		System.out.println("\n Determining efficient allocation of intervention officers, inspectors, K9 officers, patrol officers, and tactical officers");
-		System.out.println("\n Setting up linear programming problem...");
+		//System.out.println("\n Determining efficient allocation of intervention officers, inspectors, K9 officers, patrol officers, and tactical officers");
+		//System.out.println("\n Setting up linear programming problem...");
 		
 		// Find the average salary for each function
 		int[] salaries = averageSalary(stmt);
@@ -291,7 +291,8 @@ public class Optimization {
 		
 		// Vector b
 		double[] b = {v1, v2, v3, v4, v5, v6, v7};
-		
+	
+		/*
 		System.out.println("Borough: "+borough);
 		System.out.println("Number of intersections: "+intersections);
 		System.out.println("Number of crimes: "+crimes);
@@ -302,6 +303,7 @@ public class Optimization {
 		System.out.println("Salary of others (approximate): "+other_salaries);
 		System.out.println("Total cost of this station: "+total_cost);
 		System.out.println("Remaining budget: "+remaining);
+		*/
 		
 		// Put all the vectors in a matrix
 		double[][] A = {C, row1, row2, row3, row4, row5, row6, row7, b};
@@ -310,7 +312,7 @@ public class Optimization {
 	
 	public static int[] findOptimalDistribution(String borough, Statement stmt) {
 		
-		System.out.println("Running Simplex method...");
+	//	System.out.println("Running Simplex method...");
 		
 		double[][] all = createMatrix(stmt, borough);
 		
@@ -331,16 +333,18 @@ public class Optimization {
 		// Index order in matrix: {Intervention, Investigator, K9, Patrol, Tactical}
 		String[] functions = {"Intervention", "Investigator", "K9", "Patrol", "Tactical"};
 		
-		System.out.println("\nOptimal allocation of police officers in borough "+borough);
+	//	System.out.println("\nOptimal allocation of police officers in borough "+borough);
 		// Take roof of these values and convert to integers
 		int[] officers = new int[5];
+	
+		
 		for(int i=0; i<5; i++) {
 			officers[i] = (int) Math.ceil(x[i]);
-			System.out.println(functions[i]+":"+officers[i]);
+			//System.out.println(functions[i]+":"+officers[i]);
 		}
 		
-		System.out.println("Total optimal value: "+val);
-		System.out.println("================================");
+	//	System.out.println("Total optimal value: "+val);
+	//	System.out.println("================================");
 		
 		return officers;
 	}
@@ -555,6 +559,8 @@ public class Optimization {
 			//crime_rate[i] = crimeRate(boroughs.get(i), curr_year, statement);
 		}
 		
+		System.out.println("\nIntervention | Investigator | K9 | Patrol | Tactical");
+		
 		System.out.println("******************* CURRENT DISTRIBUTIONS *******************");
 		for(int i=0; i<total; i++) {
 			System.out.print("Station "+(i+1)+"\t");
@@ -580,7 +586,7 @@ public class Optimization {
 		List<Object> patrol_poids = getOfficerPOIDs(statement, "Patrol Officer");
 		List<Object> tactical_poids = getOfficerPOIDs(statement, "Tactical");
 		
-		System.out.println("\nNow updating PSID assignment as best as possible...");
+		System.out.println("\n\nNow updating PSID assignment as best as possible...");
 		
 		// Get police station IDs
 		List<Object> psids = policeStations(statement);
@@ -678,7 +684,7 @@ public class Optimization {
 			
 		}
 		
-		System.out.println("\nNow firing left over police officers...");
+		System.out.println("\n\nNow firing left over police officers...");
 		System.out.println("There are "+intervention_poids.size()+" remaining intervention officers");
 		System.out.println("There are "+investigator_poids.size()+" remaining investigators");
 		System.out.println("There are "+K9_poids.size()+" remaining K9 officers");
