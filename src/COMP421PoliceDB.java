@@ -32,7 +32,9 @@ public class COMP421PoliceDB {
 			System.out.println("4. Insert Census Information");
 			System.out.println("5. Compile Statistics");
 			System.out.println("6. Run Optimization Algorithm for Officer Allocation");
-			System.out.println("7. Quit\n");
+			System.out.println("7. Delete Offenders Without Offense");
+			System.out.println("8. Reallocate Patrol Officers to High Violation Intersection Boroughs");
+			System.out.println("9. Quit\n");
 			
 			int userin = getUserChoice_int("Your choice: ");
 			
@@ -61,6 +63,16 @@ public class COMP421PoliceDB {
 				optimize(dbStatement);
 			}
 			else if (userin == 7)
+			{
+				deleteOffenselessOffenders(dbStatement);
+			}
+			else if (userin == 8)
+			{
+				System.out.println("Indicate a traffic violation threshold for reallocation");
+				int selection = getUserChoice_int("Threshold: ");
+				reallocatePatrolOfficer(dbStatement, selection);
+			}
+			else if (userin == 9)
 			{
 				run = false;
 			}
@@ -143,6 +155,107 @@ public class COMP421PoliceDB {
 		} catch (IndexOutOfBoundsException e) {
 			System.out.println("This is the first year in the database.");
 			return -1;
+		}
+	}
+	
+	//reallocates a patrol officer to a borough with an intersection that has many violations (above threshold)
+	public static void reallocatePatrolOfficer(Statement statement, int threshold)
+	{
+		try 
+		{
+			
+			//Get intersection with traffic violations over threshold
+			ResultSet countInt = statement.executeQuery("SELECT COUNT(*) FROM intersection");
+			countInt.next();
+			
+			int numIntersection = countInt.getInt(1);
+			int counter = 0;
+			
+			int[] intersectionIDS = new int[numIntersection];
+			ResultSet IIDS = statement.executeQuery("SELECT iid FROM intersection");
+			
+			while(IIDS.next())
+			{
+				intersectionIDS[counter] = IIDS.getInt("iid");
+				counter++;
+			}
+			
+			for(int i = 0; i < numIntersection; i++)
+			{
+				ResultSet countViolations = statement.executeQuery("SELECT COUNT(*) FROM traffic_violation " +
+						"WHERE intersection_iid = " + intersectionIDS[i]);
+				countViolations.next();
+				int numberViolations = countViolations.getInt(1);
+				
+				if(numberViolations >= threshold)
+				{
+					ResultSet boroughName = statement.executeQuery("SELECT borough_bid FROM intersection WHERE iid = " +
+											intersectionIDS[i]);
+					boroughName.next();
+					String currentBorough = boroughName.getString("borough_bid");
+							
+					String countQuery = "SELECT COUNT(*) FROM police_officer WHERE police_station_psid NOT IN" + 
+							"(SELECT psid FROM police_station WHERE borough_bid = '" + currentBorough + "') AND function = 'Patrol Officer'";
+					
+					String query = "SELECT * FROM police_officer WHERE police_station_psid NOT IN" + 
+								"(SELECT psid FROM police_station WHERE borough_bid = '" + currentBorough + "') AND function = 'Patrol Officer' " +
+										"ORDER BY RAND() FETCH FIRST 1 ROWS ONLY";
+					
+					ResultSet numCandidates = statement.executeQuery(countQuery);
+					numCandidates.next();
+					int numberOfCandidates = numCandidates.getInt(1);
+					
+					if(numberOfCandidates > 0)
+					{
+						
+						ResultSet suitableCandidates = statement.executeQuery(query);
+						suitableCandidates.next();
+						
+						int candidatePOID = suitableCandidates.getInt("poid");
+						
+						ResultSet stationID = statement.executeQuery("SELECT psid FROM police_station WHERE borough_bid = '" + currentBorough + "'");
+						stationID.next();
+						int policeStationID = stationID.getInt(1);
+						
+						String updateQuery = "UPDATE police_officer SET police_station_psid = " + policeStationID + " WHERE poid = " + candidatePOID;
+						statement.executeUpdate(updateQuery);
+						System.out.println("Officer " + candidatePOID + " reallocated to " + policeStationID);
+					}
+					
+				}
+				
+			}
+		} catch (SQLException e) {
+			System.err.println(" msg: " + e.getMessage() + " code: " + e.getErrorCode() + " state: " + e.getSQLState());
+			return;
+		}
+		
+	}
+	
+	// calls stored procedure to delete all offenders that do not have an offense associated with them
+	public static void deleteOffenselessOffenders(Statement statement)
+	{
+		try 
+		{
+			CallableStatement callable = db.getConnection().prepareCall("{CALL DELETE_OFFENDER_WITHOUT_OFFENSE(?)}");
+			callable.registerOutParameter(1, java.sql.Types.INTEGER);
+			
+			callable.executeUpdate();
+			
+			int rowsDeleted = callable.getInt(1);
+			
+			if(rowsDeleted > 0)
+			{
+				System.out.println("Offenders without Offenses have been deleted");
+			}
+			else
+			{
+				System.out.println("All Offenders have an associated offense");
+			}
+			
+		} catch (SQLException e) {
+			System.err.println(" msg: " + e.getMessage() + " code: " + e.getErrorCode() + " state: " + e.getSQLState());
+			return;
 		}
 	}
 	
@@ -926,9 +1039,13 @@ public class COMP421PoliceDB {
 			{
 				policeStationBudgetAnalysis(statement);
 			}
-			else
+			else if (selection == 6)
 			{
 				offenseStatistics(statement);
+			}
+			else
+			{
+				
 			}
 			
 			return;

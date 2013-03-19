@@ -63,6 +63,11 @@ public class DBConnect {
 		return this.stmt;
 	}
 	
+	public Connection getConnection()
+	{
+		return this.con;
+	}
+	
 	public ResultSet runQuery(String query)
 	{
 		ResultSet toReturn = null;
